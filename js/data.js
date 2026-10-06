@@ -45,7 +45,7 @@ const MediData = {
             qualification: "MBBS, MD (Medicine)",
             regNo: "MCI-MH-2012-04891",
             dept: "General Medicine",
-            room: "OPD Room 102",
+            room: "OPD Room 102 (1st Floor)",
             experience: "14 Years",
             consultFee: 800,
             revenueSharePercent: 70, // 70% to doctor, 30% to hospital
@@ -59,7 +59,33 @@ const MediData = {
             waiting: 5,
             schedule: "09:00 AM - 02:00 PM | 05:00 PM - 09:00 PM",
             availableSlots: ["10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "05:30 PM", "06:00 PM"],
-            avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80"
+            avatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80",
+            slotSchedule: {
+                morning: [
+                    { time: "09:00 AM", isBooked: true, bookedBy: "Ramesh K." },
+                    { time: "09:30 AM", isBooked: true, bookedBy: "Pooja S." },
+                    { time: "10:00 AM", isBooked: true, bookedBy: "Aakash G." },
+                    { time: "10:30 AM", isBooked: false },
+                    { time: "11:00 AM", isBooked: false },
+                    { time: "11:30 AM", isBooked: false },
+                    { time: "12:00 PM", isBooked: false },
+                    { time: "12:30 PM", isBooked: true, bookedBy: "Manish T." }
+                ],
+                afternoon: [
+                    { time: "02:00 PM", isBooked: false },
+                    { time: "02:30 PM", isBooked: true, bookedBy: "Kavita M." },
+                    { time: "03:00 PM", isBooked: false },
+                    { time: "03:30 PM", isBooked: false }
+                ],
+                evening: [
+                    { time: "05:00 PM", isBooked: true, bookedBy: "Devendra R." },
+                    { time: "05:30 PM", isBooked: false },
+                    { time: "06:00 PM", isBooked: false },
+                    { time: "06:30 PM", isBooked: false },
+                    { time: "07:00 PM", isBooked: false },
+                    { time: "07:30 PM", isBooked: true, bookedBy: "Sanjay N." }
+                ]
+            }
         },
         {
             id: "DOC-02",
@@ -68,7 +94,7 @@ const MediData = {
             qualification: "MBBS, MD, DM (Cardiology)",
             regNo: "MCI-DL-2015-08124",
             dept: "Cardiology",
-            room: "OPD Room 204",
+            room: "OPD Room 204 (2nd Floor)",
             experience: "11 Years",
             consultFee: 1200,
             revenueSharePercent: 75,
@@ -82,7 +108,25 @@ const MediData = {
             waiting: 3,
             schedule: "10:00 AM - 04:00 PM",
             availableSlots: ["11:00 AM", "11:45 AM", "02:30 PM", "03:15 PM"],
-            avatar: "https://images.unsplash.com/photo-1594824813580-49605511b8b6?w=150&auto=format&fit=crop&q=80"
+            avatar: "https://images.unsplash.com/photo-1594824813580-49605511b8b6?w=150&auto=format&fit=crop&q=80",
+            slotSchedule: {
+                morning: [
+                    { time: "10:00 AM", isBooked: true, bookedBy: "Harish S." },
+                    { time: "10:45 AM", isBooked: true, bookedBy: "Rekha B." },
+                    { time: "11:30 AM", isBooked: false },
+                    { time: "12:15 PM", isBooked: false }
+                ],
+                afternoon: [
+                    { time: "02:00 PM", isBooked: true, bookedBy: "Gopal V." },
+                    { time: "02:45 PM", isBooked: false },
+                    { time: "03:30 PM", isBooked: false }
+                ],
+                evening: [
+                    { time: "05:00 PM", isBooked: false },
+                    { time: "05:45 PM", isBooked: false },
+                    { time: "06:30 PM", isBooked: true, bookedBy: "Pradeep J." }
+                ]
+            }
         },
         {
             id: "DOC-03",
@@ -91,7 +135,7 @@ const MediData = {
             qualification: "MBBS, DCH, DNB (Pediatrics)",
             regNo: "MCI-WB-2017-09433",
             dept: "Pediatrics",
-            room: "OPD Room 105",
+            room: "OPD Room 105 (1st Floor)",
             experience: "9 Years",
             consultFee: 700,
             revenueSharePercent: 70,
@@ -105,7 +149,301 @@ const MediData = {
             waiting: 4,
             schedule: "09:30 AM - 01:30 PM | 04:30 PM - 08:30 PM",
             availableSlots: ["11:30 AM", "12:15 PM", "05:00 PM", "06:00 PM"],
-            avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80"
+            avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80",
+            slotSchedule: {
+                morning: [
+                    { time: "09:30 AM", isBooked: true, bookedBy: "Baby Aarav" },
+                    { time: "10:00 AM", isBooked: true, bookedBy: "Master Vivaan" },
+                    { time: "10:30 AM", isBooked: true, bookedBy: "Baby Anvi" },
+                    { time: "11:00 AM", isBooked: false },
+                    { time: "11:30 AM", isBooked: false },
+                    { time: "12:00 PM", isBooked: false },
+                    { time: "12:30 PM", isBooked: true, bookedBy: "Master Dhruv" }
+                ],
+                afternoon: [
+                    { time: "02:30 PM", isBooked: false },
+                    { time: "03:15 PM", isBooked: false }
+                ],
+                evening: [
+                    { time: "04:30 PM", isBooked: true, bookedBy: "Baby Kiara" },
+                    { time: "05:00 PM", isBooked: false },
+                    { time: "05:30 PM", isBooked: false },
+                    { time: "06:00 PM", isBooked: false },
+                    { time: "06:30 PM", isBooked: false },
+                    { time: "07:00 PM", isBooked: true, bookedBy: "Master Kabir" }
+                ]
+            }
+        },
+        {
+            id: "DOC-04",
+            name: "Dr. Rohan Kulkarni",
+            specialty: "Orthopedic & Joint Surgeon",
+            qualification: "MBBS, MS (Orthopedics), M.Ch (UK)",
+            regNo: "MMC-MH-2011-06392",
+            dept: "Orthopedics",
+            room: "OPD Room 201 (2nd Floor)",
+            experience: "15 Years",
+            consultFee: 900,
+            revenueSharePercent: 75,
+            monthConsultCount: 112,
+            monthEarnings: 75600,
+            rating: 4.8,
+            reviewsCount: 112,
+            status: "Available",
+            todayAppointments: 16,
+            completed: 10,
+            waiting: 3,
+            schedule: "10:00 AM - 02:00 PM | 05:00 PM - 08:30 PM",
+            availableSlots: ["10:30 AM", "11:30 AM", "05:30 PM", "06:30 PM"],
+            avatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&auto=format&fit=crop&q=80",
+            slotSchedule: {
+                morning: [
+                    { time: "10:00 AM", isBooked: true, bookedBy: "Ashok Patil" },
+                    { time: "10:30 AM", isBooked: false },
+                    { time: "11:00 AM", isBooked: true, bookedBy: "Vinod Shah" },
+                    { time: "11:30 AM", isBooked: false },
+                    { time: "12:00 PM", isBooked: false },
+                    { time: "12:30 PM", isBooked: false }
+                ],
+                afternoon: [
+                    { time: "02:00 PM", isBooked: false },
+                    { time: "02:45 PM", isBooked: true, bookedBy: "Sunil Shinde" }
+                ],
+                evening: [
+                    { time: "05:00 PM", isBooked: true, bookedBy: "Meena Joshi" },
+                    { time: "05:30 PM", isBooked: false },
+                    { time: "06:00 PM", isBooked: false },
+                    { time: "06:30 PM", isBooked: false },
+                    { time: "07:00 PM", isBooked: false }
+                ]
+            }
+        },
+        {
+            id: "DOC-05",
+            name: "Dr. Priya Iyer",
+            specialty: "Consultant Dermatologist & Cosmetologist",
+            qualification: "MBBS, MD (Dermatology, Venereology & Leprosy)",
+            regNo: "KMC-2016-09214",
+            dept: "Dermatology",
+            room: "OPD Room 108 (1st Floor)",
+            experience: "8 Years",
+            consultFee: 750,
+            revenueSharePercent: 70,
+            monthConsultCount: 135,
+            monthEarnings: 70875,
+            rating: 4.9,
+            reviewsCount: 135,
+            status: "Available",
+            todayAppointments: 15,
+            completed: 9,
+            waiting: 2,
+            schedule: "11:00 AM - 03:00 PM | 06:00 PM - 09:00 PM",
+            availableSlots: ["11:30 AM", "12:30 PM", "06:30 PM", "07:30 PM"],
+            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80",
+            slotSchedule: {
+                morning: [
+                    { time: "11:00 AM", isBooked: true, bookedBy: "Simran Kaur" },
+                    { time: "11:30 AM", isBooked: false },
+                    { time: "12:00 PM", isBooked: true, bookedBy: "Neha Gupta" },
+                    { time: "12:30 PM", isBooked: false },
+                    { time: "01:00 PM", isBooked: false }
+                ],
+                afternoon: [
+                    { time: "02:00 PM", isBooked: false },
+                    { time: "02:30 PM", isBooked: false }
+                ],
+                evening: [
+                    { time: "06:00 PM", isBooked: true, bookedBy: "Tanya Sen" },
+                    { time: "06:30 PM", isBooked: false },
+                    { time: "07:00 PM", isBooked: false },
+                    { time: "07:30 PM", isBooked: false },
+                    { time: "08:00 PM", isBooked: false }
+                ]
+            }
+        },
+        {
+            id: "DOC-06",
+            name: "Dr. Meenakshi Sundaram",
+            specialty: "Gynecology & Obstetrics Consultant",
+            qualification: "MBBS, MS (OBGYN), Fellowship in Fetal Medicine",
+            regNo: "TNMC-2013-05492",
+            dept: "Gynecology & Obs",
+            room: "OPD Room 207 (2nd Floor)",
+            experience: "12 Years",
+            consultFee: 850,
+            revenueSharePercent: 75,
+            monthConsultCount: 160,
+            monthEarnings: 102000,
+            rating: 4.9,
+            reviewsCount: 160,
+            status: "In Consultation",
+            todayAppointments: 19,
+            completed: 13,
+            waiting: 4,
+            schedule: "09:00 AM - 01:00 PM | 04:00 PM - 07:30 PM",
+            availableSlots: ["10:00 AM", "11:00 AM", "04:30 PM", "05:30 PM"],
+            avatar: "https://images.unsplash.com/photo-1594824813580-49605511b8b6?w=150&auto=format&fit=crop&q=80",
+            slotSchedule: {
+                morning: [
+                    { time: "09:00 AM", isBooked: true, bookedBy: "Priyanka S." },
+                    { time: "09:30 AM", isBooked: true, bookedBy: "Nisha R." },
+                    { time: "10:00 AM", isBooked: false },
+                    { time: "10:30 AM", isBooked: true, bookedBy: "Aarti D." },
+                    { time: "11:00 AM", isBooked: false },
+                    { time: "11:30 AM", isBooked: false },
+                    { time: "12:00 PM", isBooked: false }
+                ],
+                afternoon: [
+                    { time: "02:00 PM", isBooked: false },
+                    { time: "03:00 PM", isBooked: false }
+                ],
+                evening: [
+                    { time: "04:00 PM", isBooked: true, bookedBy: "Shalini K." },
+                    { time: "04:30 PM", isBooked: false },
+                    { time: "05:00 PM", isBooked: false },
+                    { time: "05:30 PM", isBooked: false },
+                    { time: "06:00 PM", isBooked: false }
+                ]
+            }
+        },
+        {
+            id: "DOC-07",
+            name: "Dr. Arvind Bhatia",
+            specialty: "ENT & Head-Neck Specialist",
+            qualification: "MBBS, MS (ENT), DNB",
+            regNo: "DMC-2014-08912",
+            dept: "ENT Care",
+            room: "OPD Room 110 (1st Floor)",
+            experience: "10 Years",
+            consultFee: 750,
+            revenueSharePercent: 70,
+            monthConsultCount: 120,
+            monthEarnings: 63000,
+            rating: 4.8,
+            reviewsCount: 120,
+            status: "Available",
+            todayAppointments: 14,
+            completed: 8,
+            waiting: 3,
+            schedule: "10:00 AM - 02:00 PM | 05:00 PM - 08:00 PM",
+            availableSlots: ["10:30 AM", "11:30 AM", "05:30 PM", "06:30 PM"],
+            avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80",
+            slotSchedule: {
+                morning: [
+                    { time: "10:00 AM", isBooked: true, bookedBy: "Dinesh K." },
+                    { time: "10:30 AM", isBooked: false },
+                    { time: "11:00 AM", isBooked: false },
+                    { time: "11:30 AM", isBooked: false },
+                    { time: "12:00 PM", isBooked: true, bookedBy: "Chetan B." }
+                ],
+                afternoon: [
+                    { time: "02:30 PM", isBooked: false },
+                    { time: "03:15 PM", isBooked: false }
+                ],
+                evening: [
+                    { time: "05:00 PM", isBooked: true, bookedBy: "Kishore M." },
+                    { time: "05:30 PM", isBooked: false },
+                    { time: "06:00 PM", isBooked: false },
+                    { time: "06:30 PM", isBooked: false },
+                    { time: "07:00 PM", isBooked: false }
+                ]
+            }
+        }
+    ],
+
+    diseaseSpecialtyDirectory: [
+        {
+            category: "General Medicine & Diabetes",
+            categoryId: "general-diabetes",
+            icon: "bi-capsule",
+            color: "#0d9488",
+            specialtyName: "General Medicine & Diabetology",
+            recommendedDoctorId: "DOC-01",
+            diseases: [
+                { id: "DIS-01", name: "Diabetes & Blood Sugar Imbalance", keywords: ["diabetes", "sugar", "frequent urination", "thirst", "hba1c", "glucose"], desc: "High fasting/PP sugar, excessive thirst, sudden weight loss, fatigue." },
+                { id: "DIS-02", name: "Viral Fever, Malaria & Dengue", keywords: ["fever", "viral", "temperature", "chills", "bodyache", "malaria", "dengue"], desc: "High body temperature, chills, severe muscle aches, weakness." },
+                { id: "DIS-03", name: "Thyroid Disorders (Hypo / Hyper)", keywords: ["thyroid", "tsh", "weight gain", "lethargy", "swelling", "t3", "t4"], desc: "Unexplained weight gain/loss, tiredness, hair thinning, neck swelling." },
+                { id: "DIS-04", name: "General Weakness & Vitamin Deficiency", keywords: ["weakness", "vitamin", "b12", "d3", "dizziness", "fatigue"], desc: "Low stamina, muscle cramps, dizziness, chronic fatigue syndrome." }
+            ]
+        },
+        {
+            category: "Heart & Blood Pressure (Cardiology)",
+            categoryId: "cardiology",
+            icon: "bi-heart-pulse-fill",
+            color: "#e11d48",
+            specialtyName: "Interventional Cardiology",
+            recommendedDoctorId: "DOC-02",
+            diseases: [
+                { id: "DIS-05", name: "Chest Pain & Pressure (Angina)", keywords: ["chest pain", "angina", "heart pain", "tightness", "jaw pain", "left arm"], desc: "Substernal chest tightness, pain radiating to arm, heavy sensation." },
+                { id: "DIS-06", name: "High Blood Pressure (Hypertension)", keywords: ["bp", "hypertension", "high blood pressure", "headache", "dizzy"], desc: "Blood pressure reading > 140/90 mmHg, morning occipital headaches." },
+                { id: "DIS-07", name: "Heart Palpitations & Irregular Rhythm", keywords: ["palpitation", "heart beat", "fluttering", "arrhythmia", "pulse"], desc: "Rapid heart fluttering, missed beats, panic-like chest sensations." },
+                { id: "DIS-08", name: "Shortness of Breath on Walking (Dyspnea)", keywords: ["breathlessness", "breathing", "short of breath", "asthma cardiac"], desc: "Difficulty catching breath while climbing stairs or walking flat." }
+            ]
+        },
+        {
+            category: "Child Health & Vaccines (Pediatrics)",
+            categoryId: "pediatrics",
+            icon: "bi-balloon-fill",
+            color: "#f59e0b",
+            specialtyName: "Consultant Pediatrician",
+            recommendedDoctorId: "DOC-03",
+            diseases: [
+                { id: "DIS-09", name: "Childhood Fever, Cold & Cough", keywords: ["baby fever", "child cough", "cold", "runny nose", "pediatric fever", "wheezing"], desc: "Flu, congestion, runny nose, chest congestion in infants & children." },
+                { id: "DIS-10", name: "Child Immunization & Vaccination", keywords: ["vaccine", "vaccination", "immunization", "polio", "mmr", "baby shots"], desc: "Scheduled infant and toddler vaccine doses, booster charts." },
+                { id: "DIS-11", name: "Child Stomach Colic, Vomiting & Diarrhea", keywords: ["baby colic", "child vomiting", "diarrhea", "stomach ache", "loose motion"], desc: "Infant crying spells, abdominal cramps, dehydration, food rejection." }
+            ]
+        },
+        {
+            category: "Bones, Joints & Spine (Orthopedics)",
+            categoryId: "orthopedics",
+            icon: "bi-person-walking",
+            color: "#2563eb",
+            specialtyName: "Orthopedic & Joint Surgeon",
+            recommendedDoctorId: "DOC-04",
+            diseases: [
+                { id: "DIS-12", name: "Knee Arthritis & Joint Pain", keywords: ["knee pain", "arthritis", "joint stiffness", "swollen knee", "crepitus"], desc: "Difficulty walking, clicking sound in knees, cartilage degeneration." },
+                { id: "DIS-13", name: "Lower Back Pain & Slipped Disc (Sciatica)", keywords: ["back pain", "backache", "sciatica", "slipped disc", "spine", "lumbar"], desc: "Sharp lumbar pain radiating down the legs, difficulty bending." },
+                { id: "DIS-14", name: "Frozen Shoulder & Sports Injury Sprain", keywords: ["frozen shoulder", "shoulder pain", "ligament tear", "sprain", "fracture"], desc: "Restricted shoulder mobility, ankle sprain, tendon inflammation." }
+            ]
+        },
+        {
+            category: "Skin, Hair & Allergies (Dermatology)",
+            categoryId: "dermatology",
+            icon: "bi-flower1",
+            color: "#7c3aed",
+            specialtyName: "Consultant Dermatologist & Cosmetologist",
+            recommendedDoctorId: "DOC-05",
+            diseases: [
+                { id: "DIS-15", name: "Skin Rash, Itching & Fungal Ringworm", keywords: ["skin rash", "itching", "fungal", "ringworm", "red patches", "eczema"], desc: "Redness, fungal patches, burning sensation, chronic dermatitis." },
+                { id: "DIS-16", name: "Severe Acne, Pimples & Skin Pigmentation", keywords: ["acne", "pimples", "blackheads", "pigmentation", "dark spots"], desc: "Cystic face breakouts, hormonal pimples, stubborn hyperpigmentation." },
+                { id: "DIS-17", name: "Excessive Hair Fall & Scalp Dandruff", keywords: ["hair fall", "dandruff", "baldness", "alopecia", "scalp itching"], desc: "Severe hair shedding, patchy bald spots, flaky scalp." }
+            ]
+        },
+        {
+            category: "Women's Health & Maternity (Gynecology)",
+            categoryId: "gynecology",
+            icon: "bi-gender-female",
+            color: "#db2777",
+            specialtyName: "Gynecology & Obstetrics Consultant",
+            recommendedDoctorId: "DOC-06",
+            diseases: [
+                { id: "DIS-18", name: "PCOD / PCOS & Irregular Menstrual Cycle", keywords: ["pcod", "pcos", "irregular periods", "period pain", "hormonal period"], desc: "Delayed menstrual cycles, heavy flow, facial hair growth, cramps." },
+                { id: "DIS-19", name: "Antenatal Routine Pregnancy Checkup", keywords: ["pregnancy", "pregnant", "trimester", "baby scan", "fetal", "morning sickness"], desc: "Complete pregnancy care, trimester anomaly scans, nutritional guidance." },
+                { id: "DIS-20", name: "Pelvic Pain, Infection & White Discharge", keywords: ["pelvic pain", "white discharge", "uti women", "burning urine", "vaginal"], desc: "Lower abdominal discomfort, recurrent infections, pelvic fullness." }
+            ]
+        },
+        {
+            category: "Ear, Nose & Throat (ENT)",
+            categoryId: "ent",
+            icon: "bi-headset",
+            color: "#059669",
+            specialtyName: "ENT & Head-Neck Specialist",
+            recommendedDoctorId: "DOC-07",
+            diseases: [
+                { id: "DIS-21", name: "Chronic Sinusitis & Nasal Blockage", keywords: ["sinus", "sinusitis", "blocked nose", "nasal polyp", "morning congestion"], desc: "Facial pain, heavy head, recurring nasal congestion, snoring." },
+                { id: "DIS-22", name: "Throat Pain, Tonsillitis & Cough", keywords: ["throat pain", "tonsil", "sore throat", "difficulty swallowing", "hoarse voice"], desc: "Pain while swallowing food, enlarged tonsils, persistent dry cough." },
+                { id: "DIS-23", name: "Ear Pain, Discharge & Tinnitus Buzzing", keywords: ["ear pain", "ear discharge", "tinnitus", "ringing ear", "hearing loss"], desc: "Earache, fluid buildup, buzzing noise, temporary muffled hearing." }
+            ]
         }
     ],
 

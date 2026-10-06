@@ -74,12 +74,21 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFeedbackTable();
         renderSaasPlans();
         renderAuditLogs();
+        renderPublicBookingEngine();
         setupModals();
         setupGlobalShortcuts();
 
         // Restore persona from session if present
         if (state.currentRole) {
             window.switchAppRole(state.currentRole, false);
+        }
+
+        // Support direct view navigation via hash or query param (e.g., #view=online-booking)
+        const hashMatch = window.location.hash.match(/view=([a-zA-Z0-9_-]+)/);
+        const urlParams = new URLSearchParams(window.location.search);
+        const targetView = (hashMatch && hashMatch[1]) || urlParams.get('view');
+        if (targetView) {
+            switchView(targetView);
         }
     }
 
@@ -3229,12 +3238,703 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Thank you! Patient feedback recorded in NPS stream.', 'success', 'Feedback Submitted');
     };
 
-    window.submitOnlinePublicBooking = function() {
-        playAudioFx('success');
-        triggerConfetti();
-        showToast('Online Appointment Confirmed! SMS/WhatsApp link sent.', 'success', 'Public Booking Flow');
-        switchView('appointments');
+    // ==========================================================================
+    // PATIENT SELF-SERVICE APPOINTMENT & SLOT BOOKING CONTROLLER (PEX-01, APT-01)
+    // ==========================================================================
+
+    const bookingWizardState = {
+        currentStep: 1,
+        selectedCategory: 'all',
+        searchQuery: '',
+        selectedDisease: null,
+        selectedDoctorId: 'DOC-01',
+        selectedDate: 'Today, 05 Oct 2026',
+        selectedSlot: '10:30 AM',
+        consultMode: 'In-Person Clinic Visit',
+        paymentMode: 'Counter',
+        lastBookingReceipt: null
     };
+
+    function renderPublicBookingEngine() {
+        if (!bookingWizardState.selectedDisease && MediData.diseaseSpecialtyDirectory && MediData.diseaseSpecialtyDirectory.length > 0) {
+            bookingWizardState.selectedDisease = MediData.diseaseSpecialtyDirectory[0].diseases[0];
+            bookingWizardState.selectedDoctorId = MediData.diseaseSpecialtyDirectory[0].recommendedDoctorId;
+        }
+        renderDiseaseCards();
+        renderDoctorSpotlightAndSlots();
+        updateBookingSummarySidebar();
+    }
+
+    function renderDiseaseCards() {
+        const container = document.getElementById('diseaseCardsContainer');
+        if (!container || !MediData.diseaseSpecialtyDirectory) return;
+
+        const query = (bookingWizardState.searchQuery || '').toLowerCase().trim();
+        const activeCat = bookingWizardState.selectedCategory;
+
+        let matchingItems = [];
+
+        MediData.diseaseSpecialtyDirectory.forEach(group => {
+            if (activeCat !== 'all' && group.categoryId !== activeCat) return;
+
+            group.diseases.forEach(d => {
+                const textToMatch = `${d.name} ${d.desc} ${(d.keywords || []).join(' ')} ${group.category} ${group.specialtyName}`.toLowerCase();
+                if (!query || textToMatch.includes(query)) {
+                    matchingItems.push({
+                        ...d,
+                        categoryId: group.categoryId,
+                        categoryName: group.category,
+                        categoryColor: group.color,
+                        categoryIcon: group.icon,
+                        specialtyName: group.specialtyName,
+                        recommendedDoctorId: group.recommendedDoctorId
+                    });
+                }
+            });
+        });
+
+        if (matchingItems.length === 0) {
+            container.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px dashed var(--border-medium);">
+                    <i class="bi bi-search" style="font-size: 32px; color: var(--text-muted);"></i>
+                    <h4 style="margin: 10px 0 4px; font-weight: 700;">No direct match found for "${bookingWizardState.searchQuery}"</h4>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Try searching for broad terms like "fever", "chest pain", "sugar", "knee", "skin", or choose a department above.</p>
+                    <button class="btn btn-outline btn-sm" onclick="clearDiseaseSearch()">Reset Search Filter</button>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = matchingItems.map(item => {
+            const doc = MediData.doctors.find(dr => dr.id === item.recommendedDoctorId) || MediData.doctors[0];
+            const isSelected = bookingWizardState.selectedDisease && bookingWizardState.selectedDisease.id === item.id;
+
+            return `
+                <div class="disease-card ${isSelected ? 'selected' : ''}" style="--category-color: ${item.categoryColor};">
+                    <div>
+                        <div class="disease-card-header">
+                            <span class="disease-category-tag" style="background: ${item.categoryColor}15; color: ${item.categoryColor};">
+                                <i class="bi ${item.categoryIcon}"></i> ${item.categoryName}
+                            </span>
+                            <span style="font-size: 11px; font-weight: 700; color: var(--emerald-600);"><i class="bi bi-check-circle-fill"></i> Slots Open</span>
+                        </div>
+                        <h4 class="disease-card-title">${item.name}</h4>
+                        <p class="disease-card-desc">${item.desc}</p>
+                        
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px;">
+                            ${(item.keywords || []).slice(0, 3).map(kw => `
+                                <span style="font-size: 10.5px; background: var(--bg-main); border: 1px solid var(--border-subtle); padding: 2px 6px; border-radius: 4px; color: var(--text-muted);">#${kw}</span>
+                            `).join('')}
+                        </div>
+
+                        <!-- Matched Doctor Preview -->
+                        <div class="matched-doctor-preview-box">
+                            <img src="${doc.avatar}" class="matched-doctor-avatar" alt="${doc.name}">
+                            <div class="matched-doctor-info">
+                                <div class="matched-doctor-name">${doc.name}</div>
+                                <div class="matched-doctor-sub">${doc.specialty} • <b>₹${doc.consultFee}</b></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="book-disease-btn" onclick="selectDiseaseAndProceed('${item.id}', '${doc.id}')">
+                        <span>Select & View Vacant Slots</span> <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    window.filterDiseaseCategory = function(catId) {
+        bookingWizardState.selectedCategory = catId;
+        const pills = document.querySelectorAll('#diseaseCategoryPills .category-pill');
+        pills.forEach(p => {
+            if ((catId === 'all' && p.innerText.includes('All')) || p.getAttribute('onclick').includes(catId)) {
+                p.classList.add('active');
+            } else {
+                p.classList.remove('active');
+            }
+        });
+        renderDiseaseCards();
+    };
+
+    window.filterDiseasesDirectory = function() {
+        const input = document.getElementById('diseaseSearchInput');
+        bookingWizardState.searchQuery = input ? input.value : '';
+        renderDiseaseCards();
+    };
+
+    window.clearDiseaseSearch = function() {
+        const input = document.getElementById('diseaseSearchInput');
+        if (input) input.value = '';
+        bookingWizardState.searchQuery = '';
+        bookingWizardState.selectedCategory = 'all';
+        window.filterDiseaseCategory('all');
+        renderDiseaseCards();
+    };
+
+    window.quickSearchDisease = function(term) {
+        const input = document.getElementById('diseaseSearchInput');
+        if (input) input.value = term;
+        bookingWizardState.searchQuery = term;
+        renderDiseaseCards();
+    };
+
+    window.selectDiseaseAndProceed = function(diseaseId, docId) {
+        let foundDisease = null;
+        for (const cat of MediData.diseaseSpecialtyDirectory) {
+            const d = cat.diseases.find(item => item.id === diseaseId);
+            if (d) {
+                foundDisease = { ...d, categoryName: cat.category, specialtyName: cat.specialtyName };
+                break;
+            }
+        }
+
+        if (foundDisease) {
+            bookingWizardState.selectedDisease = foundDisease;
+        }
+        bookingWizardState.selectedDoctorId = docId;
+
+        playAudioFx('click');
+        jumpToBookingStep(2);
+    };
+
+    window.jumpToBookingStep = function(stepNum) {
+        if (stepNum === 2 && !bookingWizardState.selectedDisease) {
+            showToast('Please select a health concern or disease first', 'warning', 'Step Prerequisite');
+            return;
+        }
+        if (stepNum === 3 && !bookingWizardState.selectedSlot) {
+            showToast('Please pick an available vacant time slot', 'warning', 'Step Prerequisite');
+            return;
+        }
+
+        bookingWizardState.currentStep = stepNum;
+
+        // Update stepper indicator
+        for (let i = 1; i <= 4; i++) {
+            const node = document.getElementById(`wizardStepNode${i}`);
+            const line = document.getElementById(`wizardStepLine${i}`);
+            const panel = document.getElementById(`bookingStepContent${i}`);
+
+            if (node) {
+                if (i === stepNum) {
+                    node.className = 'wizard-step-node active';
+                } else if (i < stepNum) {
+                    node.className = 'wizard-step-node completed';
+                } else {
+                    node.className = 'wizard-step-node';
+                }
+            }
+            if (line) {
+                if (i < stepNum) line.classList.add('active');
+                else line.classList.remove('active');
+            }
+            if (panel) {
+                if (i === stepNum) panel.classList.add('active');
+                else panel.classList.remove('active');
+            }
+        }
+
+        if (stepNum === 2) {
+            renderDoctorSpotlightAndSlots();
+            const badge = document.getElementById('selectedConcernDisplayBadge');
+            if (badge && bookingWizardState.selectedDisease) {
+                badge.innerText = `Selected Concern: ${bookingWizardState.selectedDisease.name}`;
+            }
+        } else if (stepNum === 3) {
+            const doc = MediData.doctors.find(dr => dr.id === bookingWizardState.selectedDoctorId) || MediData.doctors[0];
+            const badge = document.getElementById('step3SlotSummaryBadge');
+            if (badge) {
+                badge.innerHTML = `<i class="bi bi-clock-fill"></i> ${bookingWizardState.selectedSlot} on ${bookingWizardState.selectedDate} with <b>${doc.name}</b>`;
+            }
+            updateBookingSummarySidebar();
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    function renderDoctorSpotlightAndSlots() {
+        const spotlightContainer = document.getElementById('doctorSpotlightCard');
+        const slotsContainer = document.getElementById('doctorSlotsMatrixContainer');
+        const doc = MediData.doctors.find(dr => dr.id === bookingWizardState.selectedDoctorId) || MediData.doctors[0];
+
+        if (spotlightContainer) {
+            spotlightContainer.innerHTML = `
+                <div class="doctor-spotlight-inner">
+                    <img src="${doc.avatar}" class="doctor-spotlight-avatar" alt="${doc.name}">
+                    <div class="doctor-spotlight-details">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px;">
+                            <div>
+                                <div class="doctor-spotlight-name">
+                                    ${doc.name} <i class="bi bi-patch-check-fill" style="color: var(--primary-600); font-size: 17px;" title="Verified Specialist"></i>
+                                </div>
+                                <div class="doctor-spotlight-spec">${doc.specialty} • ${doc.qualification}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Consultation Fee</div>
+                                <div style="font-size: 22px; font-weight: 900; color: var(--teal-600);">₹${doc.consultFee}</div>
+                            </div>
+                        </div>
+
+                        <div class="doctor-spotlight-meta-chips">
+                            <span class="doc-meta-chip"><i class="bi bi-geo-alt-fill" style="color: var(--rose-500);"></i> ${doc.room}</span>
+                            <span class="doc-meta-chip"><i class="bi bi-award-fill" style="color: #f59e0b;"></i> ${doc.experience} Experience</span>
+                            <span class="doc-meta-chip"><i class="bi bi-star-fill" style="color: #f59e0b;"></i> ${doc.rating} (${doc.reviewsCount} Reviews)</span>
+                            <span class="doc-meta-chip" style="color: var(--emerald-600); font-weight: 700;"><i class="bi bi-shield-check"></i> Reg: ${doc.regNo}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="font-size: 12px; color: var(--text-muted);">
+                        <i class="bi bi-info-circle-fill" style="color: var(--primary-600);"></i> Matched for: <b>${bookingWizardState.selectedDisease ? bookingWizardState.selectedDisease.name : 'Clinical Consultation'}</b>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 11.5px; color: var(--text-muted);">Want another doctor?</span>
+                        <select class="form-control" style="width: auto; padding: 4px 10px; font-size: 12px;" onchange="switchPublicBookingDoctor(this.value)">
+                            ${MediData.doctors.map(dr => `<option value="${dr.id}" ${dr.id === doc.id ? 'selected' : ''}>${dr.name} (${dr.dept} - ₹${dr.consultFee})</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (slotsContainer) {
+            const schedule = doc.slotSchedule || {
+                morning: [{ time: "10:00 AM", isBooked: false }, { time: "10:30 AM", isBooked: false }, { time: "11:00 AM", isBooked: false }, { time: "11:30 AM", isBooked: false }],
+                afternoon: [{ time: "02:00 PM", isBooked: false }, { time: "02:30 PM", isBooked: false }, { time: "03:00 PM", isBooked: false }],
+                evening: [{ time: "05:00 PM", isBooked: false }, { time: "05:30 PM", isBooked: false }, { time: "06:00 PM", isBooked: false }]
+            };
+
+            let vacantCount = 0;
+            const countVacant = (arr) => (arr || []).filter(s => !s.isBooked).length;
+            vacantCount = countVacant(schedule.morning) + countVacant(schedule.afternoon) + countVacant(schedule.evening);
+
+            slotsContainer.innerHTML = `
+                <div style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 13px; font-weight: 800; color: var(--text-primary);">Available Appointment Slots for ${bookingWizardState.selectedDate}</span>
+                    <span class="badge badge-green"><i class="bi bi-lightning-charge-fill"></i> ${vacantCount} Vacant Slots Available</span>
+                </div>
+
+                <!-- Morning Slots -->
+                <div class="slot-period-group">
+                    <div class="slot-period-title"><i class="bi bi-sunrise-fill" style="color: #f59e0b;"></i> Morning Slots (09:00 AM - 01:00 PM)</div>
+                    <div class="slots-grid">
+                        ${(schedule.morning || []).map(s => `
+                            <button type="button" class="slot-btn ${s.isBooked ? 'booked' : 'vacant'} ${bookingWizardState.selectedSlot === s.time && !s.isBooked ? 'selected' : ''}" 
+                                onclick="selectDoctorSlot('${s.time}', ${s.isBooked})" ${s.isBooked ? 'disabled' : ''}>
+                                <span>${s.time}</span>
+                                <span class="slot-sub-status">${s.isBooked ? 'Booked' : 'Available'}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Afternoon Slots -->
+                <div class="slot-period-group">
+                    <div class="slot-period-title"><i class="bi bi-sun-fill" style="color: #f97316;"></i> Afternoon Slots (02:00 PM - 04:30 PM)</div>
+                    <div class="slots-grid">
+                        ${(schedule.afternoon || []).map(s => `
+                            <button type="button" class="slot-btn ${s.isBooked ? 'booked' : 'vacant'} ${bookingWizardState.selectedSlot === s.time && !s.isBooked ? 'selected' : ''}" 
+                                onclick="selectDoctorSlot('${s.time}', ${s.isBooked})" ${s.isBooked ? 'disabled' : ''}>
+                                <span>${s.time}</span>
+                                <span class="slot-sub-status">${s.isBooked ? 'Booked' : 'Available'}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Evening Slots -->
+                <div class="slot-period-group">
+                    <div class="slot-period-title"><i class="bi bi-moon-stars-fill" style="color: #6366f1;"></i> Evening Slots (05:00 PM - 08:30 PM)</div>
+                    <div class="slots-grid">
+                        ${(schedule.evening || []).map(s => `
+                            <button type="button" class="slot-btn ${s.isBooked ? 'booked' : 'vacant'} ${bookingWizardState.selectedSlot === s.time && !s.isBooked ? 'selected' : ''}" 
+                                onclick="selectDoctorSlot('${s.time}', ${s.isBooked})" ${s.isBooked ? 'disabled' : ''}>
+                                <span>${s.time}</span>
+                                <span class="slot-sub-status">${s.isBooked ? 'Booked' : 'Available'}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            const summaryText = document.getElementById('selectedSlotSummaryText');
+            const proceedBtn = document.getElementById('proceedToPatientDetailsBtn');
+
+            if (bookingWizardState.selectedSlot) {
+                if (summaryText) summaryText.innerText = `${bookingWizardState.selectedDate} at ${bookingWizardState.selectedSlot} (${bookingWizardState.consultMode})`;
+                if (proceedBtn) proceedBtn.disabled = false;
+            } else {
+                if (summaryText) summaryText.innerText = 'Please click an available slot above';
+                if (proceedBtn) proceedBtn.disabled = true;
+            }
+        }
+    }
+
+    window.switchPublicBookingDoctor = function(docId) {
+        bookingWizardState.selectedDoctorId = docId;
+        bookingWizardState.selectedSlot = null;
+        renderDoctorSpotlightAndSlots();
+        playAudioFx('click');
+    };
+
+    window.selectBookingDate = function(dateStr) {
+        bookingWizardState.selectedDate = dateStr;
+        const pills = document.querySelectorAll('#bookingDateSelectorRow .date-pick-pill');
+        pills.forEach(p => {
+            if (p.getAttribute('onclick').includes(dateStr.split(',')[0])) {
+                p.classList.add('active');
+            } else {
+                p.classList.remove('active');
+            }
+        });
+        renderDoctorSpotlightAndSlots();
+        playAudioFx('click');
+    };
+
+    window.setConsultationMode = function(modeStr) {
+        bookingWizardState.consultMode = modeStr;
+        const inPersonCard = document.getElementById('modeInPersonCard');
+        const teleCard = document.getElementById('modeTeleCard');
+
+        if (modeStr.includes('In-Person')) {
+            if (inPersonCard) inPersonCard.classList.add('active');
+            if (teleCard) teleCard.classList.remove('active');
+        } else {
+            if (teleCard) teleCard.classList.add('active');
+            if (inPersonCard) inPersonCard.classList.remove('active');
+        }
+        renderDoctorSpotlightAndSlots();
+        playAudioFx('click');
+    };
+
+    window.selectDoctorSlot = function(time, isBooked) {
+        if (isBooked) {
+            showToast('This slot is already booked. Please choose an available green slot.', 'warning', 'Slot Reserved');
+            return;
+        }
+        bookingWizardState.selectedSlot = time;
+        renderDoctorSpotlightAndSlots();
+        playAudioFx('click');
+    };
+
+    window.setBookingPaymentMode = function(mode) {
+        bookingWizardState.paymentMode = mode;
+        const counterChip = document.getElementById('payCounterChip');
+        const upiChip = document.getElementById('payUpiChip');
+
+        if (mode === 'Counter') {
+            if (counterChip) counterChip.classList.add('active');
+            if (upiChip) upiChip.classList.remove('active');
+        } else {
+            if (upiChip) upiChip.classList.add('active');
+            if (counterChip) counterChip.classList.remove('active');
+        }
+        updateBookingSummarySidebar();
+    };
+
+    function updateBookingSummarySidebar() {
+        const container = document.getElementById('bookingSummarySidebarContent');
+        if (!container) return;
+
+        const doc = MediData.doctors.find(dr => dr.id === bookingWizardState.selectedDoctorId) || MediData.doctors[0];
+        const fee = doc.consultFee || 800;
+        const regFee = 50;
+        const total = fee + regFee;
+
+        container.innerHTML = `
+            <div style="background: var(--bg-main); padding: 12px; border-radius: 8px; border: 1px solid var(--border-subtle); margin-bottom: 14px;">
+                <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Doctor Chamber</div>
+                <div style="font-weight: 800; font-size: 14px; color: var(--text-primary); margin-top: 2px;">${doc.name}</div>
+                <div style="font-size: 11.5px; color: var(--primary-600); font-weight: 600;">${doc.specialty}</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"><i class="bi bi-geo-alt-fill"></i> ${doc.room}</div>
+            </div>
+
+            <div style="font-size: 12.5px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);"><i class="bi bi-calendar3"></i> Date:</span>
+                    <b>${bookingWizardState.selectedDate}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);"><i class="bi bi-clock"></i> Time Slot:</span>
+                    <b style="color: var(--teal-600);">${bookingWizardState.selectedSlot || '10:30 AM'}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);"><i class="bi bi-clipboard2-pulse"></i> Concern:</span>
+                    <b>${bookingWizardState.selectedDisease ? bookingWizardState.selectedDisease.name : 'General Consultation'}</b>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: var(--text-muted);"><i class="bi bi-hospital"></i> Mode:</span>
+                    <b>${bookingWizardState.consultMode}</b>
+                </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px; margin-top: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px;">
+                    <span>Consultation Charges:</span>
+                    <span>₹${fee.toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px;">
+                    <span>Digital OPD Token & ABHA:</span>
+                    <span>₹${regFee.toFixed(2)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; color: var(--text-primary); border-top: 2px dashed var(--border-subtle); padding-top: 8px; margin-top: 8px;">
+                    <span>Total Amount:</span>
+                    <span style="color: var(--teal-600);">₹${total.toFixed(2)}</span>
+                </div>
+                <div style="font-size: 11px; color: var(--emerald-600); margin-top: 6px; font-weight: 700;">
+                    <i class="bi bi-shield-check"></i> ${bookingWizardState.paymentMode === 'UPI' ? 'Pay Online via UPI' : 'Pay at Reception upon Arrival'}
+                </div>
+            </div>
+        `;
+    }
+
+    window.submitOnlinePublicBooking = function() {
+        const patName = document.getElementById('patientBookingFullName').value || 'Sunita Verma';
+        const phone = document.getElementById('patientBookingMobile').value || '+91 98210 44522';
+        const age = parseInt(document.getElementById('patientBookingAge').value) || 44;
+        const gender = document.getElementById('patientBookingGender').value || 'Female';
+        const email = document.getElementById('patientBookingEmail').value || 'sunita.v@example.com';
+        const city = document.getElementById('patientBookingCity').value || 'Bandra West, Mumbai';
+        const abha = document.getElementById('patientBookingAbha').value || '91-4821-0042-9902';
+        const notes = document.getElementById('patientBookingNotes').value || 'Patient self-booked appointment';
+
+        const doc = MediData.doctors.find(dr => dr.id === bookingWizardState.selectedDoctorId) || MediData.doctors[0];
+        
+        const nextTokenNum = `T-${String((MediData.queueTokens.length + 1)).padStart(2, '0')}`;
+        const newAptId = `APT-2026-0${Math.floor(100 + Math.random() * 900)}`;
+        const newPatId = `PAT-2026-0${Math.floor(120 + Math.random() * 800)}`;
+        const newMrn = `MRN-${Math.floor(90150 + Math.random() * 800)}`;
+
+        // 1. Create or link patient
+        let existingPatient = MediData.patients.find(p => p.phone === phone || p.name.toLowerCase() === patName.toLowerCase());
+        if (!existingPatient) {
+            existingPatient = {
+                id: newPatId,
+                mrn: newMrn,
+                name: patName,
+                age: age,
+                gender: gender,
+                phone: phone,
+                email: email,
+                bloodGroup: "B+",
+                abhaId: abha,
+                allergies: ["None known"],
+                chronicConditions: [bookingWizardState.selectedDisease ? bookingWizardState.selectedDisease.name : 'General Care'],
+                emergencyContact: { name: patName + ' Family', relation: "Family", phone: phone },
+                address: city,
+                registeredOn: "2026-10-05",
+                lastVisit: "Today (Self-Booked)",
+                totalVisits: 1,
+                avatar: gender === 'Female' ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
+                vitals: { bp: "120/80", pulse: 74, spo2: 99, temp: 98.6, weight: 64, height: 165, bmi: 23.5, bloodSugarR: "110 mg/dL" },
+                familyMembers: [],
+                portalPrescriptions: [],
+                portalLabReports: []
+            };
+            MediData.patients.unshift(existingPatient);
+        }
+
+        // 2. Create appointment record
+        const newAppointment = {
+            id: newAptId,
+            tokenNo: nextTokenNum,
+            patientId: existingPatient.id,
+            patientName: patName,
+            age: age,
+            gender: gender,
+            phone: phone,
+            doctorId: doc.id,
+            doctorName: doc.name,
+            specialty: doc.specialty,
+            room: doc.room,
+            date: bookingWizardState.selectedDate,
+            time: bookingWizardState.selectedSlot || '10:30 AM',
+            type: bookingWizardState.consultMode,
+            status: "Confirmed",
+            paymentStatus: bookingWizardState.paymentMode === 'UPI' ? 'Paid (UPI)' : 'Pay at Reception',
+            consultFee: doc.consultFee,
+            chiefComplaint: notes,
+            source: "Self-Service Portal"
+        };
+        MediData.appointments.unshift(newAppointment);
+
+        // 3. Add to live OPD queue tokens
+        const newQueueItem = {
+            tokenId: `Q-${Math.floor(110 + Math.random() * 890)}`,
+            tokenNo: nextTokenNum,
+            patientId: existingPatient.id,
+            patientName: patName,
+            age: age,
+            gender: gender.charAt(0).toUpperCase(),
+            phone: phone,
+            doctorId: doc.id,
+            doctorName: doc.name,
+            room: doc.room,
+            time: bookingWizardState.selectedSlot || '10:30 AM',
+            status: "Waiting",
+            priority: "Normal",
+            calledAt: null,
+            waitingMins: 0,
+            source: "Online Booking"
+        };
+        MediData.queueTokens.push(newQueueItem);
+
+        // 4. Mark slot as booked in doc schedule
+        if (doc.slotSchedule) {
+            ['morning', 'afternoon', 'evening'].forEach(period => {
+                if (doc.slotSchedule[period]) {
+                    const slotObj = doc.slotSchedule[period].find(s => s.time === bookingWizardState.selectedSlot);
+                    if (slotObj) {
+                        slotObj.isBooked = true;
+                        slotObj.bookedBy = patName;
+                    }
+                }
+            });
+        }
+
+        // 5. Audit Log
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: 'Patient (Self-Service)',
+            action: 'ONLINE_SLOT_BOOKED',
+            entity: `Apt #${newAptId} • Token ${nextTokenNum}`,
+            tenant: MediData.tenant.id,
+            details: `Booked ${bookingWizardState.selectedSlot} on ${bookingWizardState.selectedDate} with ${doc.name} for ${patName}.`,
+            ip: '49.36.112.44'
+        });
+
+        // Store receipt details for Step 4
+        bookingWizardState.lastBookingReceipt = {
+            aptId: newAptId,
+            tokenNo: nextTokenNum,
+            patientName: patName,
+            age: age,
+            gender: gender,
+            phone: phone,
+            email: email,
+            city: city,
+            abha: abha,
+            docName: doc.name,
+            specialty: doc.specialty,
+            room: doc.room,
+            date: bookingWizardState.selectedDate,
+            time: bookingWizardState.selectedSlot,
+            mode: bookingWizardState.consultMode,
+            disease: bookingWizardState.selectedDisease ? bookingWizardState.selectedDisease.name : 'Clinical Care',
+            fee: doc.consultFee,
+            paymentStatus: bookingWizardState.paymentMode === 'UPI' ? 'Paid via UPI QR' : 'Pay at Counter'
+        };
+
+        // Render Step 4
+        renderDigitalAppointmentPass();
+        jumpToBookingStep(4);
+
+        playAudioFx('chime');
+        triggerConfetti();
+        showToast(`Token #${nextTokenNum} Issued for ${patName}! Added to OPD Queue.`, 'success', 'Appointment Confirmed');
+
+        // Re-render core views
+        renderAppointmentsTable();
+        renderQueueTable();
+        renderPatientsTable();
+        renderAuditLogs();
+    };
+
+    function renderDigitalAppointmentPass() {
+        const container = document.getElementById('printableAppointmentSlipArea');
+        const r = bookingWizardState.lastBookingReceipt;
+        if (!container || !r) return;
+
+        container.innerHTML = `
+            <div class="pass-header">
+                <div>
+                    <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.05em; opacity: 0.9;">${MediData.tenant.name}</div>
+                    <div style="font-size: 17px; font-weight: 800; margin-top: 2px;">OPD CONSULTATION TOKEN PASS</div>
+                    <div style="font-size: 11px; opacity: 0.85;">${MediData.tenant.address} • Ph: ${MediData.tenant.phone}</div>
+                </div>
+                <div class="pass-token-badge">
+                    <div style="font-size: 10px; text-transform: uppercase; color: var(--teal-600); font-weight: 800;">OPD TOKEN NO</div>
+                    <div style="font-size: 24px; font-weight: 900; color: #0f172a;">${r.tokenNo}</div>
+                </div>
+            </div>
+
+            <div class="pass-body">
+                <div class="pass-grid-row">
+                    <div>
+                        <div class="pass-meta-label">Patient Name</div>
+                        <div class="pass-meta-val">${r.patientName} (${r.age} Yrs / ${r.gender})</div>
+                        <div style="font-size: 11px; color: #64748b;">Phone: ${r.phone}</div>
+                    </div>
+                    <div>
+                        <div class="pass-meta-label">Consulting Specialist</div>
+                        <div class="pass-meta-val" style="color: #0284c7;">${r.docName}</div>
+                        <div style="font-size: 11px; color: #64748b;">${r.specialty} • <b>${r.room}</b></div>
+                    </div>
+                </div>
+
+                <div class="pass-grid-row">
+                    <div>
+                        <div class="pass-meta-label">Appointment Date & Slot</div>
+                        <div class="pass-meta-val" style="color: #0d9488;">${r.date} • ${r.time}</div>
+                        <div style="font-size: 11px; color: #64748b;">Mode: ${r.mode}</div>
+                    </div>
+                    <div>
+                        <div class="pass-meta-label">Health Concern / Disease</div>
+                        <div class="pass-meta-val">${r.disease}</div>
+                        <div style="font-size: 11px; color: #64748b;">Ref ID: <b>${r.aptId}</b></div>
+                    </div>
+                </div>
+
+                <div class="pass-grid-row" style="border-bottom: none; margin-bottom: 8px;">
+                    <div>
+                        <div class="pass-meta-label">Consultation Fee</div>
+                        <div class="pass-meta-val">₹${r.fee.toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <div class="pass-meta-label">Payment Status</div>
+                        <div class="pass-meta-val" style="color: #10b981;"><i class="bi bi-check-circle-fill"></i> ${r.paymentStatus}</div>
+                    </div>
+                </div>
+
+                <div class="pass-qr-strip">
+                    <div style="display: flex; align-items: center; gap: 14px;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=MEDIOS-TOKEN-${r.tokenNo}-${r.aptId}" alt="QR" style="width: 70px; height: 70px; border-radius: 6px; background: white; padding: 4px; border: 1px solid #cbd5e1;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 12.5px; color: #0f172a;">Express Self Check-in Kiosk Barcode</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Scan this QR code at the clinic reception scanner to verify your arrival automatically.</div>
+                            <div style="font-size: 10.5px; color: #0284c7; font-weight: 700; margin-top: 4px;">ABHA Linked: ${r.abha || 'Available'}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    window.printPatientAppointmentSlip = function() {
+        playAudioFx('click');
+        window.print();
+    };
+
+    window.simulateWhatsAppSlipSend = function() {
+        const r = bookingWizardState.lastBookingReceipt;
+        playAudioFx('chime');
+        showToast(`Token #${r ? r.tokenNo : 'T-01'} & Google Map directions sent to WhatsApp (${r ? r.phone : '+91 98210 44522'})!`, 'success', 'WhatsApp Automated Dispatch');
+    };
+
+    window.resetPatientBookingWizard = function() {
+        bookingWizardState.searchQuery = '';
+        bookingWizardState.selectedCategory = 'all';
+        bookingWizardState.selectedSlot = '10:30 AM';
+        bookingWizardState.lastBookingReceipt = null;
+        window.clearDiseaseSearch();
+        jumpToBookingStep(1);
+        playAudioFx('click');
+    };
+
 
     window.generateQueueTokenForApt = function(id) {
         playAudioFx('chime');

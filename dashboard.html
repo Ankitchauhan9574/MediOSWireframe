@@ -1432,38 +1432,322 @@
                 </div>
             </section>
 
-            <!-- Public Booking Flow -->
+            <!-- Public Patient Slot Booking Module (PEX-01, APT-01) -->
             <section class="view-section" id="view-online-booking">
-                <div class="public-booking-container">
-                    <div class="booking-header-banner">
-                        <div>
-                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 4px;">Public Booking Portal</span>
-                            <h2 style="font-size: 22px; font-weight: 800; margin-top: 4px;">Apex Healthcare & Multispeciality Clinic</h2>
+                <div class="patient-booking-wizard-container">
+                    
+                    <!-- Wizard Header Banner -->
+                    <div class="booking-hero-header">
+                        <div class="booking-hero-left">
+                            <div class="hero-badge"><i class="bi bi-shield-check"></i> Verified Digital Health Desk</div>
+                            <h2>Patient Self-Service Appointment & Slot Booking</h2>
+                            <p>Select your health concern or disease to get the recommended specialist doctor and choose vacant live slots.</p>
                         </div>
-                        <i class="bi bi-calendar2-check-fill" style="font-size: 28px;"></i>
+                        <div class="booking-hero-meta">
+                            <div class="facility-chip"><i class="bi bi-geo-alt-fill"></i> Apex Healthcare Main Campus</div>
+                            <div class="facility-chip"><i class="bi bi-clock-history"></i> Instant Live Token Generated</div>
+                        </div>
                     </div>
-                    <div style="padding: 28px;">
-                        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 12px;">1. Select Consulting Doctor</h4>
-                        <select class="form-control" id="onlineBookingDoctorSelect" style="margin-bottom: 16px;">
-                            <option value="DOC-01">Dr. Rajeshwar Sharma (General Medicine - Fee: ₹800)</option>
-                            <option value="DOC-02">Dr. Ananya Nair (Cardiology - Fee: ₹1,200)</option>
-                        </select>
-                        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 12px;">2. Choose Time Slot</h4>
-                        <div class="slot-grid-picker">
-                            <div class="slot-pill-btn active"><i class="bi bi-clock"></i> 10:30 AM</div>
-                            <div class="slot-pill-btn"><i class="bi bi-clock"></i> 11:00 AM</div>
-                            <div class="slot-pill-btn"><i class="bi bi-clock"></i> 11:30 AM</div>
+
+                    <!-- Step Progress Indicator -->
+                    <div class="wizard-stepper-bar">
+                        <div class="wizard-step-node active" id="wizardStepNode1" onclick="jumpToBookingStep(1)">
+                            <div class="step-num"><i class="bi bi-heart-pulse-fill"></i></div>
+                            <div class="step-label">1. Health Concern / Disease</div>
                         </div>
-                        <div class="form-row" style="margin-top: 16px;">
-                            <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="onlineBookingPatientName" class="form-control" value="Sunita Verma"></div>
-                            <div class="form-group"><label class="form-label">WhatsApp Number</label><input type="text" id="onlineBookingPatientPhone" class="form-control" value="+91 98210 44522"></div>
+                        <div class="wizard-step-line" id="wizardStepLine1"></div>
+                        <div class="wizard-step-node" id="wizardStepNode2" onclick="jumpToBookingStep(2)">
+                            <div class="step-num"><i class="bi bi-calendar-check-fill"></i></div>
+                            <div class="step-label">2. Doctor & Vacant Slots</div>
                         </div>
-                        <button class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;" onclick="submitOnlinePublicBooking()">
-                            <i class="bi bi-calendar-check-fill"></i> Confirm & Generate Instant Token
-                        </button>
+                        <div class="wizard-step-line" id="wizardStepLine2"></div>
+                        <div class="wizard-step-node" id="wizardStepNode3" onclick="jumpToBookingStep(3)">
+                            <div class="step-num"><i class="bi bi-person-lines-fill"></i></div>
+                            <div class="step-label">3. Patient Details</div>
+                        </div>
+                        <div class="wizard-step-line" id="wizardStepLine3"></div>
+                        <div class="wizard-step-node" id="wizardStepNode4">
+                            <div class="step-num"><i class="bi bi-ticket-detailed-fill"></i></div>
+                            <div class="step-label">4. Confirmed Token Slip</div>
+                        </div>
                     </div>
+
+                    <!-- ==========================================================
+                         STEP 1: DISEASE & SYMPTOM SEARCH + CATEGORY SELECTOR
+                         ========================================================== -->
+                    <div class="booking-step-content active" id="bookingStepContent1">
+                        <div class="card" style="margin-bottom: 24px;">
+                            <div class="card-header" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+                                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; flex-wrap: wrap; gap: 10px;">
+                                    <div>
+                                        <h3 class="card-title"><i class="bi bi-search" style="color: var(--primary-600);"></i> Step 1: What health issue or symptom are you facing?</h3>
+                                        <p style="font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">MediOS AI Clinical Router automatically matches you with the right specialist and chamber.</p>
+                                    </div>
+                                    <div class="smart-match-badge"><i class="bi bi-stars"></i> Smart AI Specialist Match</div>
+                                </div>
+                                
+                                <!-- Search Bar -->
+                                <div class="disease-search-bar-wrap">
+                                    <i class="bi bi-search search-icon"></i>
+                                    <input type="text" id="diseaseSearchInput" class="disease-search-input" placeholder="Type symptom or illness (e.g., Blood Sugar, Chest Pain, Child Fever, Knee Arthritis, Skin Rash, PCOD, Sinus...)" oninput="filterDiseasesDirectory()">
+                                    <button class="clear-search-btn" onclick="clearDiseaseSearch()"><i class="bi bi-x-circle-fill"></i></button>
+                                </div>
+
+                                <!-- Popular Quick Tags -->
+                                <div class="quick-symptom-tags">
+                                    <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Quick Search:</span>
+                                    <button class="symptom-quick-chip" onclick="quickSearchDisease('Diabetes')"><i class="bi bi-capsule"></i> Diabetes</button>
+                                    <button class="symptom-quick-chip" onclick="quickSearchDisease('Chest pain')"><i class="bi bi-heart-pulse"></i> Chest Pain</button>
+                                    <button class="symptom-quick-chip" onclick="quickSearchDisease('Fever')"><i class="bi bi-thermometer-half"></i> High Fever</button>
+                                    <button class="symptom-quick-chip" onclick="quickSearchDisease('Knee pain')"><i class="bi bi-person-walking"></i> Knee Pain</button>
+                                    <button class="symptom-quick-chip" onclick="quickSearchDisease('Skin rash')"><i class="bi bi-flower1"></i> Skin Rash</button>
+                                    <button class="symptom-quick-chip" onclick="quickSearchDisease('Pregnancy')"><i class="bi bi-gender-female"></i> Pregnancy / PCOD</button>
+                                    <button class="symptom-quick-chip" onclick="quickSearchDisease('Throat')"><i class="bi bi-headset"></i> Ear / Throat</button>
+                                </div>
+                            </div>
+
+                            <!-- Category Filter Tabs -->
+                            <div class="disease-category-pills-row" id="diseaseCategoryPills">
+                                <button class="category-pill active" onclick="filterDiseaseCategory('all')"><i class="bi bi-grid-fill"></i> All Departments</button>
+                                <button class="category-pill" onclick="filterDiseaseCategory('general-diabetes')"><i class="bi bi-capsule"></i> General & Diabetes</button>
+                                <button class="category-pill" onclick="filterDiseaseCategory('cardiology')"><i class="bi bi-heart-pulse-fill"></i> Heart & BP</button>
+                                <button class="category-pill" onclick="filterDiseaseCategory('pediatrics')"><i class="bi bi-balloon-fill"></i> Child & Pediatrics</button>
+                                <button class="category-pill" onclick="filterDiseaseCategory('orthopedics')"><i class="bi bi-person-walking"></i> Bone & Joints</button>
+                                <button class="category-pill" onclick="filterDiseaseCategory('dermatology')"><i class="bi bi-flower1"></i> Skin & Hair</button>
+                                <button class="category-pill" onclick="filterDiseaseCategory('gynecology')"><i class="bi bi-gender-female"></i> Women's Health</button>
+                                <button class="category-pill" onclick="filterDiseaseCategory('ent')"><i class="bi bi-headset"></i> Ear, Nose & Throat</button>
+                            </div>
+
+                            <!-- Disease Cards Grid Container -->
+                            <div class="disease-cards-grid" id="diseaseCardsContainer">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==========================================================
+                         STEP 2: DOCTOR SPOTLIGHT & LIVE VACANT SLOTS PICKER
+                         ========================================================== -->
+                    <div class="booking-step-content" id="bookingStepContent2">
+                        <div class="step-nav-toolbar">
+                            <button class="btn btn-outline btn-sm" onclick="jumpToBookingStep(1)"><i class="bi bi-arrow-left"></i> Change Health Concern</button>
+                            <span class="selected-concern-label" id="selectedConcernDisplayBadge">Selected Concern: Diabetes Mellitus</span>
+                        </div>
+
+                        <!-- Doctor Spotlight Card -->
+                        <div class="doctor-spotlight-card" id="doctorSpotlightCard">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+
+                        <!-- Date & Slot Selection Card -->
+                        <div class="card" style="margin-top: 20px;">
+                            <div class="card-header" style="justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                                <div>
+                                    <h3 class="card-title"><i class="bi bi-clock-history" style="color: var(--teal-600);"></i> Choose Consultation Date & Vacant Slot</h3>
+                                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Real-time availability directly synced with doctor OPD schedule.</p>
+                                </div>
+                                <div class="slot-legend-row">
+                                    <span class="legend-item"><span class="legend-dot vacant"></span> Available (Vacant)</span>
+                                    <span class="legend-item"><span class="legend-dot booked"></span> Booked / Busy</span>
+                                    <span class="legend-item"><span class="legend-dot selected"></span> Selected</span>
+                                </div>
+                            </div>
+
+                            <!-- Date Selection Pills -->
+                            <div class="booking-date-selector-row" id="bookingDateSelectorRow">
+                                <button class="date-pick-pill active" onclick="selectBookingDate('Today, 05 Oct 2026')">
+                                    <span class="date-day">Today</span>
+                                    <span class="date-val">05 Oct</span>
+                                    <span class="date-status">Slots Open</span>
+                                </button>
+                                <button class="date-pick-pill" onclick="selectBookingDate('Tomorrow, 06 Oct 2026')">
+                                    <span class="date-day">Tomorrow</span>
+                                    <span class="date-val">06 Oct</span>
+                                    <span class="date-status">Open</span>
+                                </button>
+                                <button class="date-pick-pill" onclick="selectBookingDate('Wednesday, 07 Oct 2026')">
+                                    <span class="date-day">Wed</span>
+                                    <span class="date-val">07 Oct</span>
+                                    <span class="date-status">Open</span>
+                                </button>
+                                <button class="date-pick-pill" onclick="selectBookingDate('Thursday, 08 Oct 2026')">
+                                    <span class="date-day">Thu</span>
+                                    <span class="date-val">08 Oct</span>
+                                    <span class="date-status">Open</span>
+                                </button>
+                            </div>
+
+                            <!-- Consultation Mode Toggle -->
+                            <div class="consult-mode-selector">
+                                <label class="mode-radio-card active" id="modeInPersonCard" onclick="setConsultationMode('In-Person Clinic Visit')">
+                                    <input type="radio" name="consultMode" value="In-Person" checked>
+                                    <i class="bi bi-hospital"></i>
+                                    <div>
+                                        <div class="mode-title">In-Person OPD Visit</div>
+                                        <div class="mode-desc">Doctor Chamber consultation at Main Campus</div>
+                                    </div>
+                                </label>
+                                <label class="mode-radio-card" id="modeTeleCard" onclick="setConsultationMode('HD Video Tele-Consultation')">
+                                    <input type="radio" name="consultMode" value="Tele-Consult">
+                                    <i class="bi bi-camera-video-fill"></i>
+                                    <div>
+                                        <div class="mode-title">Video Teleconsultation</div>
+                                        <div class="mode-desc">Join 1-on-1 encrypted video call from home</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Time Slots Matrix -->
+                            <div class="slots-container-wrapper" id="doctorSlotsMatrixContainer">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+
+                            <div class="step-footer-actions">
+                                <div class="selected-slot-summary-box">
+                                    <span style="font-size: 11.5px; color: var(--text-muted);">Selected Slot:</span>
+                                    <div class="slot-highlight-text" id="selectedSlotSummaryText">Please click an available slot above</div>
+                                </div>
+                                <button class="btn btn-primary btn-lg" id="proceedToPatientDetailsBtn" onclick="jumpToBookingStep(3)" disabled>
+                                    Proceed to Patient Details <i class="bi bi-arrow-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==========================================================
+                         STEP 3: PATIENT DEMOGRAPHIC & CONTACT FORM
+                         ========================================================== -->
+                    <div class="booking-step-content" id="bookingStepContent3">
+                        <div class="step-nav-toolbar">
+                            <button class="btn btn-outline btn-sm" onclick="jumpToBookingStep(2)"><i class="bi bi-arrow-left"></i> Change Doctor / Slot</button>
+                            <span class="selected-concern-label" id="step3SlotSummaryBadge">Slot: 10:30 AM with Dr. Rajeshwar Sharma</span>
+                        </div>
+
+                        <div class="booking-form-grid-layout">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="bi bi-person-vcard-fill" style="color: var(--primary-600);"></i> Patient Information & Contact Details</h3>
+                                </div>
+                                
+                                <form id="publicPatientBookingForm" onsubmit="event.preventDefault(); submitOnlinePublicBooking();">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">Full Name of Patient <span style="color: var(--rose-500);">*</span></label>
+                                            <input type="text" id="patientBookingFullName" class="form-control" placeholder="e.g. Ramesh Chandra" value="Sunita Verma" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">WhatsApp / Mobile Number <span style="color: var(--rose-500);">*</span></label>
+                                            <input type="tel" id="patientBookingMobile" class="form-control" placeholder="+91 98200 12345" value="+91 98210 44522" required>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">Age <span style="color: var(--rose-500);">*</span></label>
+                                            <input type="number" id="patientBookingAge" class="form-control" placeholder="Years" value="44" min="1" max="115" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Gender <span style="color: var(--rose-500);">*</span></label>
+                                            <select id="patientBookingGender" class="form-control" required>
+                                                <option value="Female" selected>Female</option>
+                                                <option value="Male">Male</option>
+                                                <option value="Other">Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Email ID (For Slip & Reports)</label>
+                                            <input type="email" id="patientBookingEmail" class="form-control" placeholder="name@domain.com" value="sunita.v@example.com">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label class="form-label">City / Locality</label>
+                                            <input type="text" id="patientBookingCity" class="form-control" placeholder="e.g. Bandra West, Mumbai" value="Bandra West, Mumbai">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">ABHA Health ID (Optional)</label>
+                                            <input type="text" id="patientBookingAbha" class="form-control" placeholder="91-XXXX-XXXX-XXXX" value="91-4821-0042-9902">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="form-label">Brief Description of Symptoms / Existing Conditions</label>
+                                        <textarea id="patientBookingNotes" class="form-control" rows="2" placeholder="Describe symptoms, duration, current medicines, or known drug allergies...">Elevated morning fasting blood glucose, mild dizziness and fatigue since 3 days.</textarea>
+                                    </div>
+
+                                    <div class="payment-preference-box">
+                                        <div style="font-weight: 700; font-size: 13px; margin-bottom: 8px;">Select Payment Mode:</div>
+                                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                            <label class="payment-option-chip active" id="payCounterChip" onclick="setBookingPaymentMode('Counter')">
+                                                <input type="radio" name="bookingPayment" value="Counter" checked>
+                                                <i class="bi bi-cash-coin"></i> Pay at Hospital Reception (Cash / UPI / Card)
+                                            </label>
+                                            <label class="payment-option-chip" id="payUpiChip" onclick="setBookingPaymentMode('UPI')">
+                                                <input type="radio" name="bookingPayment" value="UPI">
+                                                <i class="bi bi-qr-code"></i> Instant UPI Pay (GPay / PhonePe / Paytm)
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div style="display: flex; justify-content: flex-end; margin-top: 20px; gap: 12px;">
+                                        <button type="button" class="btn btn-outline" onclick="jumpToBookingStep(2)">Back</button>
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="bi bi-check2-circle"></i> Confirm Booking & Generate Token
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Booking Order Summary Card -->
+                            <div class="card booking-order-summary-sidebar">
+                                <div class="card-header">
+                                    <h3 class="card-title">Appointment Summary</h3>
+                                </div>
+                                <div class="summary-body" id="bookingSummarySidebarContent">
+                                    <!-- Populated dynamically via JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ==========================================================
+                         STEP 4: LIVE CONFIRMED DIGITAL APPOINTMENT PASS & SLIP
+                         ========================================================== -->
+                    <div class="booking-step-content" id="bookingStepContent4">
+                        <div class="booking-success-wrapper">
+                            <div class="success-confetti-badge">
+                                <i class="bi bi-check-circle-fill"></i>
+                            </div>
+                            <h2 style="font-size: 24px; font-weight: 900; color: var(--emerald-600); margin-top: 8px;">Appointment Confirmed!</h2>
+                            <p style="color: var(--text-muted); font-size: 13.5px;">Your appointment has been registered in the Hospital OPD Queue. An SMS and WhatsApp confirmation with your token has been dispatched.</p>
+
+                            <!-- Printable Digital Appointment Pass -->
+                            <div class="digital-appointment-pass" id="printableAppointmentSlipArea">
+                                <!-- Populated dynamically via JS -->
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="success-actions-row no-print">
+                                <button class="btn btn-outline" onclick="printPatientAppointmentSlip()">
+                                    <i class="bi bi-printer-fill"></i> Print / Save Token PDF
+                                </button>
+                                <button class="btn btn-teal" onclick="simulateWhatsAppSlipSend()">
+                                    <i class="bi bi-whatsapp"></i> Send to WhatsApp (+91)
+                                </button>
+                                <button class="btn btn-primary" onclick="switchView('queue')">
+                                    <i class="bi bi-ticket-perforated-fill"></i> View Live OPD Queue
+                                </button>
+                                <button class="btn btn-outline" onclick="resetPatientBookingWizard()">
+                                    <i class="bi bi-arrow-clockwise"></i> Book Another Appointment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
+
 
             <!-- Analytics -->
             <section class="view-section" id="view-analytics">
