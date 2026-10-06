@@ -586,6 +586,121 @@ const MediData = {
     ],
 
     // =========================================================================
+    // PARTNER PHARMACIES & MEDICAL STORES DIRECTORY
+    // =========================================================================
+    partnerPharmacies: [
+        {
+            id: "PHARM-01",
+            name: "Apex Central In-House Pharmacy",
+            branch: "Main Campus (Ground Floor)",
+            dlNo: "MH-MZ4-2024-88412",
+            phone: "+91 (022) 2847-9005",
+            address: "Ground Floor, Apex Healthcare, Bandra West, Mumbai",
+            pharmacistOnDuty: "Naveen P. (Reg #MH-PH-8891)",
+            isHospitalInHouse: true,
+            openHours: "24 Hours (Day & Night)"
+        },
+        {
+            id: "PHARM-02",
+            name: "Apollo Pharmacy (24x7 Bandra Station)",
+            branch: "Bandra West Station Road",
+            dlNo: "MH-MZ4-2023-44102",
+            phone: "+91 98200 44102",
+            address: "Shop 4, Hill Road, Opp. Bandra Station (W), Mumbai",
+            pharmacistOnDuty: "Rahul Sharma (Reg #MH-PH-7712)",
+            isHospitalInHouse: false,
+            openHours: "24x7 Emergency Chemist"
+        },
+        {
+            id: "PHARM-03",
+            name: "MedPlus Chemist & Druggist",
+            branch: "Pali Hill Suite",
+            dlNo: "MH-MZ4-2022-90114",
+            phone: "+91 98700 12094",
+            address: "Plot 18, Pali Mala Road, Bandra West, Mumbai",
+            pharmacistOnDuty: "Pooja Mehta (Reg #MH-PH-6502)",
+            isHospitalInHouse: false,
+            openHours: "08:00 AM - 11:30 PM"
+        },
+        {
+            id: "PHARM-04",
+            name: "Wellness Forever 24x7 Chemist",
+            branch: "Linking Road Hub",
+            dlNo: "MH-MZ4-2024-11890",
+            phone: "+91 98210 99401",
+            address: "Corner of 14th Road, Linking Road, Khar West, Mumbai",
+            pharmacistOnDuty: "Amit G. (Reg #MH-PH-9923)",
+            isHospitalInHouse: false,
+            openHours: "24 Hours"
+        },
+        {
+            id: "PHARM-05",
+            name: "Sanjivani Lifeline Medical Store",
+            branch: "Andheri West Annex",
+            dlNo: "MH-MZ4-2021-33190",
+            phone: "+91 98330 55102",
+            address: "Shop 2, SV Road, Near Station, Andheri West, Mumbai",
+            pharmacistOnDuty: "Deepak S. (Reg #MH-PH-4419)",
+            isHospitalInHouse: false,
+            openHours: "08:30 AM - 11:00 PM"
+        }
+    ],
+
+    // =========================================================================
+    // REAL-TIME PHARMACY RX QUEUE (CLAIM KEYS & DISPENSING ORDERS)
+    // =========================================================================
+    pharmacyRxQueue: [
+        {
+            rxNo: "RX-2026-0914",
+            serialNo: "SRL-8849-01",
+            claimKey: "749-102",
+            patientId: "PAT-2026-0101",
+            patientName: "Vikramaditya Verma",
+            patientAge: 48,
+            patientGender: "Male",
+            patientPhone: "+91 98210 44521",
+            doctorId: "DOC-01",
+            doctorName: "Dr. Rajeshwar Sharma",
+            targetPharmacyId: "PHARM-01",
+            targetPharmacyName: "Apex Central In-House Pharmacy",
+            prescribedAt: "05 Oct 2026, 09:45 AM",
+            status: "Ready for Pickup", // Ready for Pickup, Dispensed & Claimed
+            pickupMode: "Counter Claim with Rx Key",
+            items: [
+                { medId: "MED-001", brand: "Tab. Glycomet GP 1/500", dose: "1 Tab", freq: "1-0-1", duration: "30 Days", timing: "Before Meals", qty: 60, batchNo: "GLY-26B04", unitPrice: 11.50 },
+                { medId: "MED-002", brand: "Tab. Telma 40", dose: "1 Tab", freq: "1-0-0", duration: "30 Days", timing: "After Breakfast", qty: 30, batchNo: "TEL-26D12", unitPrice: 9.80 },
+                { medId: "MED-007", brand: "Tab. Rosuvas 10", dose: "1 Tab", freq: "0-0-1", duration: "30 Days", timing: "After Dinner", qty: 30, batchNo: "ROS-26C18", unitPrice: 16.40 }
+            ],
+            totalBill: 1476.00,
+            dispensedAt: null,
+            dispensedBy: null
+        },
+        {
+            rxNo: "RX-2026-0918",
+            serialNo: "SRL-8849-02",
+            claimKey: "382-904",
+            patientId: "PAT-2026-0102",
+            patientName: "Sunita Deshpande",
+            patientAge: 34,
+            patientGender: "Female",
+            patientPhone: "+91 97690 12890",
+            doctorId: "DOC-01",
+            doctorName: "Dr. Rajeshwar Sharma",
+            targetPharmacyId: "PHARM-02",
+            targetPharmacyName: "Apollo Pharmacy (24x7 Bandra Station)",
+            prescribedAt: "05 Oct 2026, 10:15 AM",
+            status: "Ready for Pickup",
+            pickupMode: "Express Counter Claim",
+            items: [
+                { medId: "MED-005", brand: "Tab. Thyronorm 50mcg", dose: "1 Tab", freq: "1-0-0", duration: "60 Days", timing: "Empty Stomach", qty: 60, batchNo: "THY-26E05", unitPrice: 3.20 }
+            ],
+            totalBill: 192.00,
+            dispensedAt: null,
+            dispensedBy: null
+        }
+    ],
+
+    // =========================================================================
     // PHASE 3: PHARMACY INVENTORY, BATCHES & GRN LEDGER (M10, PHA-01 - PHA-07)
     // =========================================================================
     pharmacyBatches: [

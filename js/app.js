@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderDoctorEMR();
         renderBillingPOS();
         renderPharmacyBatches();
+        renderPharmacyRxQueueTable();
         renderLabWorklist();
         renderDoctorPayouts();
         renderIpdBedMap();
@@ -426,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
     // 3. PHASE 3: Pharmacy Batches & FEFO Stock Ledger (PHA-01 - 07)
     // --------------------------------------------------------------------------
     function renderPharmacyBatches() {
@@ -468,41 +470,447 @@ document.addEventListener('DOMContentLoaded', () => {
         `).join('');
     }
 
-    window.openPharmacyDispenseModal = function() {
+    // --------------------------------------------------------------------------
+    // Live Doctor-to-Medical Store Connected e-Prescriptions Queue (PHA-08)
+    // --------------------------------------------------------------------------
+    function renderPharmacyRxQueueTable(filteredStoreId = 'all') {
+        const tbody = document.getElementById('pharmacyRxOrdersTableBody');
+        if (!tbody || !MediData.pharmacyRxQueue) return;
+
+        let list = MediData.pharmacyRxQueue;
+        if (filteredStoreId && filteredStoreId !== 'all') {
+            list = list.filter(o => o.targetPharmacyId === filteredStoreId);
+        }
+
+        if (list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                        <i class="bi bi-inbox" style="font-size: 24px;"></i>
+                        <div style="margin-top: 6px; font-weight: 600;">No pending e-Prescriptions in this medical store queue.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = list.map(o => {
+            const isDispensed = o.status.includes('Dispensed');
+            return `
+                <tr style="${isDispensed ? 'opacity: 0.75;' : 'background: rgba(13, 148, 136, 0.02);'}">
+                    <td>
+                        <div style="font-weight: 800; font-family: var(--font-mono); color: var(--primary-600);">${o.serialNo}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">${o.rxNo} • ${o.prescribedAt.split(',')[1] || o.prescribedAt}</div>
+                    </td>
+                    <td>
+                        <div class="rx-claim-key-pill" title="Unique Patient Claim Key" style="background: rgba(13, 148, 136, 0.12); color: var(--teal-600); font-weight: 900; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-family: var(--font-mono); border: 1px solid rgba(13, 148, 136, 0.3); display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="bi bi-key-fill" style="font-size: 11px;"></i> ${o.claimKey}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">${o.patientName}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);"><i class="bi bi-telephone"></i> ${o.patientPhone}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; font-size: 12.5px;">${o.doctorName}</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);">Attending Consultant</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; font-size: 12px; color: var(--teal-700);">${o.targetPharmacyName}</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);"><i class="bi bi-geo-alt"></i> ${o.pickupMode}</div>
+                    </td>
+                    <td>
+                        <span class="badge badge-blue" style="font-weight: 700;">${o.items.length} Medicines</span>
+                        <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">
+                            ${o.items.map(i => i.brand.split(' ')[1] || i.brand).join(', ')}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 900; font-size: 13.5px; color: var(--text-primary);">₹ ${o.totalBill.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    </td>
+                    <td>
+                        <span class="badge ${isDispensed ? 'badge-green' : 'badge-amber'}">
+                            ${isDispensed ? '<i class="bi bi-check2-all"></i> Dispensed' : '<i class="bi bi-clock-history"></i> Ready for Pickup'}
+                        </span>
+                    </td>
+                    <td>
+                        ${isDispensed ? `
+                            <button class="btn btn-sm btn-outline" onclick="openPharmacyDispenseModal('${o.rxNo}')">
+                                <i class="bi bi-receipt"></i> View Bill
+                            </button>
+                        ` : `
+                            <button class="btn btn-sm btn-teal" onclick="openPharmacyDispenseModal('${o.rxNo}')" style="font-weight: 700;">
+                                <i class="bi bi-bag-check"></i> Dispense & Claim
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.filterPharmacyOrdersByStore = function(storeId) {
+        renderPharmacyRxQueueTable(storeId);
+    };
+
+    window.verifyAndClaimPrescriptionByKey = function(inputKey = null) {
+        const rawKey = inputKey || (document.getElementById('rxClaimKeySearchInput') ? document.getElementById('rxClaimKeySearchInput').value : '');
+        const cleanKey = (rawKey || '').replace(/[\s-]/g, '').toLowerCase().trim();
+
+        if (!cleanKey) {
+            showToast('Please enter a Claim Key, Serial Number, or Phone Number.', 'warning', 'Claim Key Required');
+            return;
+        }
+
+        const foundOrder = MediData.pharmacyRxQueue.find(o => {
+            const k = (o.claimKey || '').replace(/[\s-]/g, '').toLowerCase();
+            const s = (o.serialNo || '').replace(/[\s-]/g, '').toLowerCase();
+            const r = (o.rxNo || '').replace(/[\s-]/g, '').toLowerCase();
+            const p = (o.patientPhone || '').replace(/[\s-]/g, '').toLowerCase();
+            return k === cleanKey || s.includes(cleanKey) || r.includes(cleanKey) || p.includes(cleanKey);
+        });
+
+        if (foundOrder) {
+            playAudioFx('chime');
+            showToast(`Claim Key Verified! Loading prescription for ${foundOrder.patientName}...`, 'success', 'Claim Key Validated');
+            openPharmacyDispenseModal(foundOrder.rxNo);
+        } else {
+            playAudioFx('alert');
+            showToast(`No prescription found matching "${rawKey}". Please check the 6-digit claim key on patient's WhatsApp message.`, 'error', 'Invalid Claim Key');
+        }
+    };
+
+    window.openPharmacyDispenseModal = function(rxNo = 'RX-2026-0914') {
+        const order = MediData.pharmacyRxQueue.find(o => o.rxNo === rxNo) || MediData.pharmacyRxQueue[0];
+        state.currentDispensingRxNo = order ? order.rxNo : rxNo;
+
+        const body = document.getElementById('pharmacyDispenseModalBody');
+        const confirmBtn = document.getElementById('confirmDispenseActionBtn');
+
+        if (body && order) {
+            const isDispensed = order.status.includes('Dispensed');
+            if (confirmBtn) {
+                confirmBtn.style.display = isDispensed ? 'none' : 'inline-flex';
+            }
+
+            body.innerHTML = `
+                <div style="background: var(--bg-main); padding: 14px 18px; border-radius: var(--radius-md); border: 1.5px solid var(--border-subtle); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="font-weight: 800; font-size: 15px; color: var(--text-primary);">${order.patientName}</span>
+                            <span style="font-size: 12px; color: var(--text-muted);">(${order.patientAge || 48} Yrs / ${order.patientGender || 'Male'})</span>
+                        </div>
+                        <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
+                            Phone: <b>${order.patientPhone}</b> • Prescribed by: <b>${order.doctorName}</b>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Rx Claim Token</div>
+                        <div style="font-family: var(--font-mono); font-weight: 900; font-size: 18px; color: var(--teal-600); background: rgba(13, 148, 136, 0.1); padding: 2px 10px; border-radius: 6px; border: 1px solid rgba(13, 148, 136, 0.3);">
+                            <i class="bi bi-key-fill"></i> ${order.claimKey}
+                        </div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Serial: <b>${order.serialNo}</b></div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Prescribed Medicine</th>
+                                <th>Dose & Frequency</th>
+                                <th>Allocated FEFO Batch</th>
+                                <th>Expiry</th>
+                                <th>Quantity</th>
+                                <th>Unit MRP / Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${order.items.map(item => {
+                                const matchingBatch = MediData.pharmacyBatches.find(b => b.medId === item.medId) || { batchNo: item.batchNo || 'BAT-26A', expiryDate: '03/2028', mrpRate: item.unitPrice || 12.00 };
+                                const itemTotal = (item.qty || 30) * (item.unitPrice || matchingBatch.mrpRate);
+                                return `
+                                    <tr>
+                                        <td>
+                                            <div style="font-weight: 700; color: var(--text-primary);">${item.brand}</div>
+                                            <div style="font-size: 11px; color: var(--text-muted);">${item.timing || 'As Directed'}</div>
+                                        </td>
+                                        <td><span class="badge badge-blue">${item.dose || '1 Tab'} (${item.freq || '1-0-1'})</span></td>
+                                        <td><span class="batch-chip">${matchingBatch.batchNo}</span></td>
+                                        <td><span style="font-weight: 700; font-size: 12px; color: var(--emerald-600);">${matchingBatch.expiryDate}</span></td>
+                                        <td><b>${item.qty} Tabs</b></td>
+                                        <td><b>₹ ${itemTotal.toFixed(2)}</b></td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 2px solid var(--border-subtle); flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Fulfilling Medical Store & Pharmacist:</div>
+                        <div style="font-weight: 700; font-size: 13px; color: var(--teal-700);">
+                            ${order.targetPharmacyName} • Naveen P. (Reg #MH-PH-8891)
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 11px; color: var(--text-muted);">Total Pharmacy Bill (incl. GST):</div>
+                        <div style="font-size: 24px; font-weight: 900; color: var(--teal-600);">₹ ${order.totalBill.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                    </div>
+                </div>
+            `;
+        }
+
         document.getElementById('pharmacyDispenseModal').classList.add('active');
     };
 
     window.completePharmacyDispense = function() {
+        const rxNo = state.currentDispensingRxNo || 'RX-2026-0914';
+        const order = MediData.pharmacyRxQueue.find(o => o.rxNo === rxNo);
+
+        if (order) {
+            order.status = 'Dispensed & Claimed';
+            order.dispensedAt = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            order.dispensedBy = 'Pharmacist Naveen P.';
+
+            // Deduct batch stock
+            order.items.forEach(item => {
+                const b = MediData.pharmacyBatches.find(bat => bat.medId === item.medId);
+                if (b) {
+                    b.stockQty = Math.max(0, b.stockQty - (item.qty || 30));
+                }
+            });
+        }
+
         document.getElementById('pharmacyDispenseModal').classList.remove('active');
-        
-        // Deduct batch stock simulation
-        MediData.pharmacyBatches[0].stockQty -= 60;
-        MediData.pharmacyBatches[1].stockQty -= 30;
         renderPharmacyBatches();
+        renderPharmacyRxQueueTable();
 
         MediData.auditLogs.unshift({
             id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
             time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            actor: `Pharmacist Naveen P. (PHA-01)`,
-            action: 'PHARMACY_PRESCRIPTION_DISPENSED',
-            entity: `Rx #RX-2026-0914 (Vikramaditya Verma)`,
+            actor: `Pharmacist Naveen P. (Dispensing Counter)`,
+            action: 'PRESCRIPTION_CLAIM_DISPENSED',
+            entity: `Claim #${order ? order.claimKey : '749-102'} (${order ? order.patientName : 'Patient'})`,
             tenant: MediData.tenant.id,
-            details: `Dispensed Glycomet GP (Batch GLY-26B04), Telma 40 (Batch TEL-26D12). Deducted FEFO stock. Total: ₹1,476`,
+            details: `Validated Unique Claim Key #${order ? order.claimKey : '749-102'} (Serial ${order ? order.serialNo : 'SRL-8849'}). Dispensed all medicines from FEFO ledger. Bill ₹${order ? order.totalBill : 1476}`,
             ip: '192.168.1.112'
         });
         renderAuditLogs();
 
-        showToast('Prescription Dispensed! Stock ledger updated & billing entry synced.');
+        playAudioFx('chime');
+        triggerConfetti();
+        showToast(`Prescription #${rxNo} Dispensed successfully! Stock deducted & pickup confirmation SMS sent to ${order ? order.patientPhone : 'patient'}.`, 'success', 'e-Prescription Claimed');
+    };
+
+    // --------------------------------------------------------------------------
+    // Doctor Lock, Sign & Medical Store Router (PHA-08)
+    // --------------------------------------------------------------------------
+    window.lockSignAndRoutePrescription = function() {
+        const p = MediData.patients.find(x => x.id === state.currentPatientId) || MediData.patients[0];
+        const doc = MediData.currentUser;
+        const targetPharmacyId = document.getElementById('emrTargetPharmacySelect') ? document.getElementById('emrTargetPharmacySelect').value : 'PHARM-01';
+        const targetPharmacy = MediData.partnerPharmacies.find(ph => ph.id === targetPharmacyId) || MediData.partnerPharmacies[0];
+        
+        const pickupRadio = document.querySelector('input[name="emrPickupMode"]:checked');
+        const pickupMode = pickupRadio ? pickupRadio.value : 'Counter Claim with Rx Key';
+
+        const rxCount = MediData.pharmacyRxQueue.length + 1;
+        const newRxNo = `RX-2026-0${Math.floor(920 + Math.random() * 80)}`;
+        const newSerialNo = `SRL-8849-0${rxCount}`;
+        
+        // Generate a 6-digit claim key (e.g. 749-102)
+        const randKey1 = Math.floor(100 + Math.random() * 900);
+        const randKey2 = Math.floor(100 + Math.random() * 900);
+        const newClaimKey = `${randKey1}-${randKey2}`;
+
+        // Compute total bill
+        let totalBill = 0;
+        const items = state.activeEncounter.rxItems.map(item => {
+            const batch = MediData.pharmacyBatches.find(b => b.medId === item.medId) || { mrpRate: 14.50, batchNo: 'GLY-26B' };
+            const unitPrice = batch.mrpRate;
+            totalBill += (item.qty || 30) * unitPrice;
+            return {
+                ...item,
+                batchNo: batch.batchNo,
+                unitPrice: unitPrice
+            };
+        });
+
+        const newRxOrder = {
+            rxNo: newRxNo,
+            serialNo: newSerialNo,
+            claimKey: newClaimKey,
+            patientId: p.id,
+            patientName: p.name,
+            patientAge: p.age,
+            patientGender: p.gender,
+            patientPhone: p.phone,
+            doctorId: doc.id,
+            doctorName: doc.name,
+            targetPharmacyId: targetPharmacy.id,
+            targetPharmacyName: targetPharmacy.name,
+            prescribedAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ', Today',
+            status: "Ready for Pickup",
+            pickupMode: pickupMode,
+            items: items,
+            totalBill: Math.round(totalBill),
+            dispensedAt: null,
+            dispensedBy: null
+        };
+
+        MediData.pharmacyRxQueue.unshift(newRxOrder);
+        state.lastDispatchedRx = newRxOrder;
+
+        // Render modal body
+        const modalBody = document.getElementById('prescriptionDispatchModalBody');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <!-- Digital Doctor Prescription Certificate -->
+                <div class="printable-document" style="border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; background: #ffffff; color: #0f172a; margin-bottom: 20px;">
+                    <div class="doc-hospital-header" style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 12px;">
+                        <div>
+                            <div style="font-size: 16px; font-weight: 800; color: #0284c7;">${MediData.tenant.name}</div>
+                            <div style="font-size: 11px; color: #64748b;">${MediData.tenant.address} • Phone: ${MediData.tenant.phone}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 800; color: #0f172a;">${doc.name}</div>
+                            <div style="font-size: 11px; color: #64748b;">${doc.qualification} • Reg: <b>${doc.regNo}</b></div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 10px 14px; border-radius: 6px; font-size: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; border: 1px solid #e2e8f0;">
+                        <div><b>Patient:</b> ${p.name} (${p.age} Yrs / ${p.gender})</div>
+                        <div><b>MRN:</b> ${p.mrn} • ABHA: ${p.abhaId}</div>
+                        <div><b>Prescription No:</b> ${newRxNo}</div>
+                        <div><b>Serial Number:</b> <span style="font-family: var(--font-mono); font-weight: 800; color: #0284c7;">${newSerialNo}</span></div>
+                    </div>
+
+                    <!-- Unique Claim Key Highlight Box -->
+                    <div style="background: linear-gradient(135deg, #0d9488, #0284c7); color: #ffffff; padding: 14px 18px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <div style="font-size: 10.5px; text-transform: uppercase; font-weight: 800; opacity: 0.9;">PATIENT COUNTER CLAIM KEY (OTP)</div>
+                            <div style="font-size: 26px; font-weight: 900; font-family: var(--font-mono); letter-spacing: 0.05em; margin-top: 2px;">
+                                <i class="bi bi-key-fill"></i> ${newClaimKey}
+                            </div>
+                            <div style="font-size: 11px; opacity: 0.85;">Show this 6-digit key or serial number at the medical store to claim medicines instantly.</div>
+                        </div>
+                        <div style="background: #ffffff; padding: 6px; border-radius: 6px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=MEDIOS-RX-${newClaimKey}" alt="QR" style="width: 60px; height: 60px;">
+                        </div>
+                    </div>
+
+                    <!-- Destination Medical Store -->
+                    <div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #166534; text-transform: uppercase;">
+                                <i class="bi bi-geo-alt-fill"></i> Routed to Medical Store:
+                            </div>
+                            <div style="font-weight: 800; font-size: 13.5px; color: #14532d; margin-top: 2px;">
+                                ${targetPharmacy.name}
+                            </div>
+                            <div style="font-size: 11px; color: #15803d;">${targetPharmacy.address} • Ph: ${targetPharmacy.phone}</div>
+                        </div>
+                        <span style="font-size: 11px; font-weight: 700; color: #166534; background: #dcfce7; padding: 4px 8px; border-radius: 6px;">
+                            ${pickupMode}
+                        </span>
+                    </div>
+
+                    <table class="modern-table" style="font-size: 12px; margin-bottom: 12px;">
+                        <thead>
+                            <tr style="background: #f1f5f9;">
+                                <th>Medicine</th>
+                                <th>Dose</th>
+                                <th>Frequency</th>
+                                <th>Duration</th>
+                                <th>Timing</th>
+                                <th>Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${items.map(item => `
+                                <tr>
+                                    <td><b>${item.brand}</b></td>
+                                    <td>${item.dose}</td>
+                                    <td><span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-weight: 700;">${item.freq}</span></td>
+                                    <td>${item.duration}</td>
+                                    <td>${item.timing}</td>
+                                    <td><b>${item.qty}</b></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Simulated WhatsApp SMS Notification Card -->
+                <div style="background: #075e54; color: #ffffff; border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 14px rgba(7, 94, 84, 0.25);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-weight: 800; font-size: 12.5px; display: flex; align-items: center; gap: 6px;">
+                            <i class="bi bi-whatsapp" style="color: #25d366; font-size: 17px;"></i> Automated WhatsApp Notification Sent to Patient
+                        </div>
+                        <span style="font-size: 10px; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">Delivered to ${p.phone}</span>
+                    </div>
+                    <div style="background: #ffffff; color: #0f172a; padding: 12px 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; position: relative;">
+                        <div style="font-weight: 800; color: #075e54; margin-bottom: 4px;">Apex Healthcare • Digital e-Prescription</div>
+                        <div>Dear <b>${p.name}</b>, your prescription from <b>${doc.name}</b> has been sent to <b>${targetPharmacy.name}</b>.</div>
+                        <div style="margin: 8px 0; padding: 8px; background: #f0fdf4; border: 1px dashed #22c55e; border-radius: 6px;">
+                            <div>🔑 <b>Unique Claim Key:</b> <span style="font-size: 16px; font-weight: 900; color: #166534; font-family: var(--font-mono);">${newClaimKey}</span></div>
+                            <div>🔖 <b>Serial Number:</b> <b>${newSerialNo}</b></div>
+                            <div>📍 <b>Pickup Store:</b> ${targetPharmacy.name} (${targetPharmacy.address})</div>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b;">Show this Key or QR code at the chemist counter to collect your medicines. Total Bill: ₹${Math.round(totalBill)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        document.getElementById('prescriptionDispatchModal').classList.add('active');
+
+        // Audit Log
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: `${doc.name} (EMR Cockpit)`,
+            action: 'PRESCRIPTION_LOCKED_AND_ROUTED',
+            entity: `Rx #${newRxNo} • Claim Key ${newClaimKey}`,
+            tenant: MediData.tenant.id,
+            details: `Doctor prescribed ${items.length} medicines to ${p.name}. Auto-routed to ${targetPharmacy.name} with Claim Key #${newClaimKey}. WhatsApp alert sent to ${p.phone}.`,
+            ip: '192.168.1.104'
+        });
+        renderAuditLogs();
+        renderPharmacyRxQueueTable();
+
+        playAudioFx('chime');
+        triggerConfetti();
+        showToast(`Prescription Locked & Routed to ${targetPharmacy.name}! Claim Key: ${newClaimKey}`, 'success', 'e-Prescription Dispatched');
+    };
+
+    window.simulateWhatsAppRxSend = function() {
+        const order = state.lastDispatchedRx || MediData.pharmacyRxQueue[0];
+        playAudioFx('chime');
+        showToast(`WhatsApp message with Claim Key #${order ? order.claimKey : '749-102'} re-sent to ${order ? order.patientPhone : '+91 98210 44521'}!`, 'success', 'WhatsApp Delivery');
+    };
+
+    window.openPharmacyQrScannerModal = function() {
+        document.getElementById('pharmacyQrScannerModal').classList.add('active');
+    };
+
+    window.submitSimulatedQrScan = function() {
+        const scannedKey = document.getElementById('simulatedScanKeyInput').value || '749-102';
+        document.getElementById('pharmacyQrScannerModal').classList.remove('active');
+        verifyAndClaimPrescriptionByKey(scannedKey);
     };
 
     window.quickDispenseBatch = function(batchId) {
         const batch = MediData.pharmacyBatches.find(b => b.id === batchId);
         if (batch) {
-            batch.stockQty -= 10;
+            batch.stockQty = Math.max(0, batch.stockQty - 10);
             renderPharmacyBatches();
             showToast(`Dispensed 10 units of ${batch.brand} (Batch ${batch.batchNo})`);
         }
     };
+
 
     window.openNewGrnModal = function() {
         document.getElementById('newGrnModal').classList.add('active');

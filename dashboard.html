@@ -419,7 +419,67 @@
                     </div>
                 </div>
 
-                <!-- Main Pharmacy Workspace -->
+                <!-- e-Prescription Claim & Counter Dispensing Desk (PHA-08) -->
+                <div class="card" style="margin-bottom: 20px; border-top: 3px solid var(--teal-600);">
+                    <div class="card-header" style="flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3 class="card-title"><i class="bi bi-prescription2" style="color: var(--teal-600);"></i> Live Doctor e-Prescription Claim & Dispensing Desk</h3>
+                                <span class="badge badge-green"><i class="bi bi-broadcast"></i> Live Stream</span>
+                            </div>
+                            <p class="card-subtitle">Patients claim medicines at counter using their Unique 6-Digit Claim Key or QR Barcode</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 700;">Active Medical Store:</span>
+                            <select class="form-control" id="activePharmacyDeskFilter" style="width: auto; font-size: 12px; font-weight: 700; padding: 6px 12px;" onchange="filterPharmacyOrdersByStore(this.value)">
+                                <option value="all">All Connected Pharmacies</option>
+                                <option value="PHARM-01" selected>Apex Central In-House Pharmacy (Main Campus)</option>
+                                <option value="PHARM-02">Apollo Pharmacy (24x7 Bandra West)</option>
+                                <option value="PHARM-03">MedPlus Chemist (Pali Hill)</option>
+                                <option value="PHARM-04">Wellness Forever (Linking Road)</option>
+                                <option value="PHARM-05">Sanjivani Lifeline (Andheri)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Quick Claim Key Search Bar -->
+                    <div style="padding: 16px 20px; background: var(--bg-main); border-bottom: 1px solid var(--border-subtle); display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                        <div style="position: relative; flex: 1; min-width: 280px;">
+                            <i class="bi bi-key-fill" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--teal-600); font-size: 16px;"></i>
+                            <input type="text" id="rxClaimKeySearchInput" class="form-control" style="padding-left: 38px; font-weight: 700; height: 42px; font-size: 13.5px;" placeholder="Enter Unique 6-Digit Claim Key (e.g. 749-102), Serial No (e.g. SRL-8849-01), or Phone..." onkeypress="if(event.key === 'Enter') verifyAndClaimPrescriptionByKey()">
+                        </div>
+                        <button class="btn btn-teal" style="height: 42px; font-weight: 800; padding: 0 18px;" onclick="verifyAndClaimPrescriptionByKey()">
+                            <i class="bi bi-shield-check"></i> Verify Key & Dispense
+                        </button>
+                        <button class="btn btn-outline" style="height: 42px;" onclick="openPharmacyQrScannerModal()">
+                            <i class="bi bi-qr-code-scan"></i> Scan Patient QR
+                        </button>
+                    </div>
+
+                    <!-- Incoming Rx Queue Table -->
+                    <div class="table-responsive">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Serial & Rx Number</th>
+                                    <th>Unique Claim Key</th>
+                                    <th>Patient Details</th>
+                                    <th>Prescribed By</th>
+                                    <th>Target Medical Store</th>
+                                    <th>Medicines & Qty</th>
+                                    <th>Amount (₹)</th>
+                                    <th>Pickup / Route Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pharmacyRxOrdersTableBody">
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Main Pharmacy Inventory & FEFO Ledger -->
                 <div class="card">
                     <div class="card-header">
                         <div>
@@ -1325,13 +1385,37 @@
 
                         <div id="emrRxItemsList" class="rx-items-list"></div>
 
-                        <div style="margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
-                            <button class="btn btn-teal" style="width: 100%; font-size: 13.5px; padding: 11px;" onclick="lockAndSignPrescription()">
-                                <i class="bi bi-lock-fill"></i> Lock & Sign Prescription
+                        <!-- Target Medical Store / Pharmacy Routing Selector -->
+                        <div style="margin-top: 14px; padding: 12px; background: var(--bg-main); border-radius: var(--radius-md); border: 1.5px solid var(--border-subtle);">
+                            <div style="font-size: 11px; font-weight: 700; color: var(--teal-600); text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center;">
+                                <span><i class="bi bi-hospital"></i> Route to Medical Store:</span>
+                                <span class="badge badge-green" style="font-size: 9.5px;">Auto Sync</span>
+                            </div>
+                            <select class="form-control" id="emrTargetPharmacySelect" style="font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                                <option value="PHARM-01" selected>Apex Central In-House Pharmacy (Ground Floor)</option>
+                                <option value="PHARM-02">Apollo Pharmacy (24x7 Bandra Station Road)</option>
+                                <option value="PHARM-03">MedPlus Chemist & Druggist (Pali Hill)</option>
+                                <option value="PHARM-04">Wellness Forever 24x7 Chemist (Linking Road)</option>
+                                <option value="PHARM-05">Sanjivani Lifeline Medical Store (Andheri West)</option>
+                            </select>
+
+                            <div style="display: flex; gap: 8px; font-size: 11.5px;">
+                                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 600;">
+                                    <input type="radio" name="emrPickupMode" value="Counter Claim with Rx Key" checked> Counter Pickup (Show Rx Key)
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer; font-weight: 600;">
+                                    <input type="radio" name="emrPickupMode" value="Home Express Delivery"> Home Delivery
+                                </label>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 14px; border-top: 1px solid var(--border-subtle); padding-top: 12px;">
+                            <button class="btn btn-teal" style="width: 100%; font-size: 13.5px; padding: 11px; font-weight: 800;" onclick="lockSignAndRoutePrescription()">
+                                <i class="bi bi-shield-check"></i> Lock, Sign & Route to Medical Store
                             </button>
-                            <button class="btn btn-outline btn-sm" style="width: 100%; margin-top: 6px;" data-switch-view="pharmacy">
-                                <i class="bi bi-capsule"></i> Send to Pharmacy Counter
-                            </button>
+                            <div style="font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 6px;">
+                                <i class="bi bi-whatsapp" style="color: #25d366;"></i> Instant WhatsApp / SMS Claim Key generated for patient
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1843,74 +1927,64 @@
      PHASE 3 MODALS: PHARMACY DISPENSE & NABL LAB REPORTS
      ========================================================================== -->
 
-<!-- 1. Pharmacy Dispense Against Prescription Modal (PHA-04) -->
+<!-- 1. Doctor Prescription Dispatch & Patient WhatsApp Notification Modal (PHA-08) -->
+<div class="modal-backdrop" id="prescriptionDispatchModal">
+    <div class="modal-box modal-lg">
+        <div class="modal-header" style="background: linear-gradient(135deg, rgba(13, 148, 136, 0.1), rgba(14, 165, 233, 0.1));">
+            <h3 class="modal-title"><i class="bi bi-shield-check" style="color: var(--teal-600);"></i> e-Prescription Signed & Routed to Medical Store</h3>
+            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" id="prescriptionDispatchModalBody">
+            <!-- Populated dynamically via JS -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" data-close-modal>Close</button>
+            <button class="btn btn-teal" onclick="simulateWhatsAppRxSend()">
+                <i class="bi bi-whatsapp"></i> Re-send WhatsApp Alert
+            </button>
+            <button class="btn btn-primary" onclick="switchView('pharmacy'); document.getElementById('prescriptionDispatchModal').classList.remove('active');">
+                <i class="bi bi-capsule-pill"></i> Open Medical Store Counter
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Pharmacy Dispense Against Prescription Modal (Dynamic PHA-04) -->
 <div class="modal-backdrop" id="pharmacyDispenseModal">
     <div class="modal-box modal-lg">
         <div class="modal-header">
-            <h3 class="modal-title"><i class="bi bi-capsule-pill" style="color: var(--teal-600);"></i> Pharmacy Dispensing Counter (FEFO Auto-Batch)</h3>
+            <h3 class="modal-title"><i class="bi bi-capsule-pill" style="color: var(--teal-600);"></i> Pharmacy Dispensing Counter (FEFO Auto-Batch & Claim Key Verification)</h3>
             <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
         </div>
-        <div class="modal-body">
-            <div style="background: var(--bg-main); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-weight: 700;">Prescription #RX-2026-0914 • Vikramaditya Verma</div>
-                    <div style="font-size: 11.5px; color: var(--text-muted);">Prescribed by: Dr. Rajeshwar Sharma • MRN-90142</div>
-                </div>
-                <span class="badge badge-green">Ready to Dispense</span>
-            </div>
-
-            <div class="table-responsive">
-                <table class="modern-table">
-                    <thead>
-                        <tr>
-                            <th>Medicine</th>
-                            <th>Auto FEFO Batch</th>
-                            <th>Expiry</th>
-                            <th>Prescribed Qty</th>
-                            <th>MRP / Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><b>Tab. Glycomet GP 1/500</b></td>
-                            <td><span class="batch-chip">GLY-26B04</span></td>
-                            <td>02/2028</td>
-                            <td>60 Tabs</td>
-                            <td><b>₹ 690.00</b></td>
-                        </tr>
-                        <tr>
-                            <td><b>Tab. Telma 40</b></td>
-                            <td><span class="batch-chip">TEL-26D12</span></td>
-                            <td>03/2028</td>
-                            <td>30 Tabs</td>
-                            <td><b>₹ 294.00</b></td>
-                        </tr>
-                        <tr>
-                            <td><b>Tab. Rosuvas 10</b></td>
-                            <td><span class="batch-chip">ROS-26C18</span></td>
-                            <td>02/2028</td>
-                            <td>30 Tabs</td>
-                            <td><b>₹ 492.00</b></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 2px solid var(--border-subtle);">
-                <div>
-                    <div style="font-size: 11px; color: var(--text-muted);">Pharmacist on Duty:</div>
-                    <div style="font-weight: 700; font-size: 13px;">Naveen P. (Reg Pharmacist #MH-PH-8891)</div>
-                </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 11px; color: var(--text-muted);">Total Pharmacy Bill:</div>
-                    <div style="font-size: 22px; font-weight: 900; color: var(--primary-600);">₹ 1,476.00</div>
-                </div>
-            </div>
+        <div class="modal-body" id="pharmacyDispenseModalBody">
+            <!-- Populated dynamically via JS -->
         </div>
         <div class="modal-footer">
             <button class="btn btn-outline" data-close-modal>Cancel</button>
-            <button class="btn btn-teal btn-lg" onclick="completePharmacyDispense()">
-                <i class="bi bi-bag-check-fill"></i> Dispense & Deduct Inventory
+            <button class="btn btn-teal btn-lg" id="confirmDispenseActionBtn" onclick="completePharmacyDispense()">
+                <i class="bi bi-bag-check-fill"></i> Verify Key, Dispense & Deduct Stock
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Pharmacy QR Scanner Modal -->
+<div class="modal-backdrop" id="pharmacyQrScannerModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="bi bi-qr-code-scan" style="color: var(--teal-600);"></i> Scan Patient Rx QR Barcode</h3>
+            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" style="text-align: center;">
+            <div style="width: 140px; height: 140px; margin: 0 auto 12px; background: white; padding: 8px; border-radius: 12px; border: 2px solid var(--border-medium);">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=MEDIOS-RX-CLAIM-749102" alt="QR" style="width: 100%; height: 100%;">
+            </div>
+            <p style="font-size: 12.5px; color: var(--text-muted);">Simulate counter barcode scanner reading the patient's smartphone prescription pass.</p>
+            <input type="text" id="simulatedScanKeyInput" class="form-control" value="749-102" style="font-weight: 800; text-align: center; font-size: 18px; color: var(--teal-600); margin-top: 10px;">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-teal" onclick="submitSimulatedQrScan()">
+                <i class="bi bi-check-circle"></i> Scan & Open Prescription
             </button>
         </div>
     </div>
