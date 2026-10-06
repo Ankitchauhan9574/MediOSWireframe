@@ -1,1354 +1,1125 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MediOS Pro — Healthcare Management SaaS (Phase 1, 2 & Phase 3 Pharmacy + Lab)</title>
+    <title>MediOS Pro â€” Next-Gen Hospital & Healthcare Operating System</title>
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-light: #38bdf8;
+            --primary-dark: #0369a1;
+            --teal: #0d9488;
+            --teal-light: #2dd4bf;
+            --teal-dark: #0f766e;
+            --emerald: #10b981;
+            --rose: #f43f5e;
+            --navy-950: #040814;
+            --navy-900: #060d1d;
+            --navy-800: #0b1528;
+            --navy-700: #13223f;
+            --slate-800: #1e293b;
+            --slate-700: #334155;
+            --slate-400: #94a3b8;
+            --text-light: #f8fafc;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 24px;
+            --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--navy-900);
+            color: var(--text-light);
+            line-height: 1.6;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            position: relative;
+        }
+
+        a { text-decoration: none; color: inherit; }
+
+        /* Background Ambient Glows */
+        .ambient-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .ambient-glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.18;
+            animation: floatGlow 16s ease-in-out infinite alternate;
+        }
+
+        .ambient-glow-1 {
+            top: -10%;
+            left: 20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, #0284c7 0%, transparent 70%);
+        }
+
+        .ambient-glow-2 {
+            top: 45%;
+            right: -5%;
+            width: 550px;
+            height: 550px;
+            background: radial-gradient(circle, #0d9488 0%, transparent 70%);
+            animation-delay: -6s;
+        }
+
+        .ambient-glow-3 {
+            bottom: -10%;
+            left: 10%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, #6366f1 0%, transparent 70%);
+            animation-delay: -10s;
+        }
+
+        @keyframes floatGlow {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(40px, -30px) scale(1.1); }
+            100% { transform: translate(-30px, 30px) scale(0.95); }
+        }
+
+        /* Navbar */
+        .landing-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 76px;
+            background: rgba(6, 13, 29, 0.85);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 6%;
+            transition: all 0.3s ease;
+        }
+
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-logo-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #0284c7, #0d9488);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 22px;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+            animation: pulseSoft 3s ease-in-out infinite;
+        }
+
+        @keyframes pulseSoft {
+            0%, 100% { transform: scale(1); box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 6px 20px rgba(14, 165, 233, 0.6); }
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--slate-400);
+        }
+
+        .nav-links a {
+            transition: color 0.2s ease;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: white;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: #38bdf8;
+            transition: width 0.2s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .nav-cta-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            font-weight: 700;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-outline {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .btn-outline:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(56, 189, 248, 0.6);
+            color: #38bdf8;
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);
+            color: white;
+            box-shadow: 0 4px 16px rgba(2, 132, 199, 0.35);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 8px 26px rgba(2, 132, 199, 0.6);
+        }
+
+        .btn-lg {
+            padding: 14px 30px;
+            font-size: 15.5px;
+            border-radius: 12px;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            padding: 170px 5% 90px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-pill-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 18px;
+            border-radius: 9999px;
+            background: rgba(2, 132, 199, 0.14);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 26px;
+            animation: floatSmooth 4s ease-in-out infinite;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.2);
+        }
+
+        @keyframes floatSmooth {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        .hero-headline {
+            font-size: 58px;
+            font-weight: 900;
+            line-height: 1.12;
+            letter-spacing: -0.035em;
+            max-width: 980px;
+            margin: 0 auto 22px;
+            color: #ffffff;
+        }
+
+        .hero-headline span {
+            background: linear-gradient(135deg, #38bdf8 0%, #2dd4bf 50%, #34d399 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtext {
+            font-size: 18.5px;
+            color: var(--slate-400);
+            max-width: 760px;
+            margin: 0 auto 38px;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+
+        .hero-cta-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 50px;
+        }
+
+        .trust-metrics-strip {
+            display: flex;
+            justify-content: center;
+            gap: 48px;
+            padding-top: 32px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-val {
+            font-size: 28px;
+            font-weight: 900;
+            color: #38bdf8;
+            font-family: var(--font-mono);
+            letter-spacing: -0.02em;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            margin-top: 2px;
+        }
+
+        /* Mockup Window Preview */
+        .preview-window-container {
+            max-width: 1180px;
+            margin: 0 auto;
+            border-radius: var(--radius-xl);
+            background: var(--navy-800);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow: 0 30px 80px -20px rgba(0, 0, 0, 0.8), 0 0 50px rgba(2, 132, 199, 0.25);
+            overflow: hidden;
+            position: relative;
+            transform: perspective(1000px) rotateX(1deg);
+            transition: transform 0.4s ease;
+        }
+
+        .preview-window-container:hover {
+            transform: perspective(1000px) rotateX(0deg) translateY(-4px);
+        }
+
+        .mockup-titlebar {
+            height: 44px;
+            background: #090f1d;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 18px;
+            font-size: 12px;
+            color: var(--slate-400);
+        }
+
+        .traffic-lights {
+            display: flex;
+            gap: 7px;
+        }
+
+        .traffic-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #f59e0b; }
+        .dot-green { background: #10b981; }
+
+        .mockup-address-bar {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 4px 16px;
+            border-radius: 20px;
+            font-family: var(--font-mono);
+            font-size: 11.5px;
+            color: #94a3b8;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .mockup-content {
+            padding: 24px;
+            background: #060d1d;
+            display: grid;
+            grid-template-columns: 220px 1fr 300px;
+            gap: 16px;
+            text-align: left;
+            min-height: 420px;
+        }
+
+        .mock-sidebar {
+            background: #091224;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .mock-nav-item {
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--slate-400);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .mock-nav-item.active {
+            background: rgba(14, 165, 233, 0.2);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+        }
+
+        .mock-main {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .mock-kpi-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .mock-kpi-card {
+            background: #0b172e;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 14px;
+            transition: transform 0.2s ease;
+        }
+
+        .mock-kpi-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        .mock-right {
+            background: #0b172e;
+            border-radius: 12px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 110px 6%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header {
+            text-align: center;
+            max-width: 780px;
+            margin: 0 auto 60px;
+        }
+
+        .section-tag {
+            font-size: 11.5px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #38bdf8;
+            margin-bottom: 12px;
+        }
+
+        .section-title {
+            font-size: 38px;
+            font-weight: 900;
+            letter-spacing: -0.03em;
+            color: white;
+            margin-bottom: 14px;
+        }
+
+        .section-desc {
+            font-size: 16px;
+            color: var(--slate-400);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-box {
+            background: rgba(11, 23, 46, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            padding: 32px;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(12px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #0ea5e9, transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-box:hover {
+            transform: translateY(-6px);
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 25px rgba(2, 132, 199, 0.15);
+        }
+
+        .feature-box:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon-wrap {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(2, 132, 199, 0.2), rgba(13, 148, 136, 0.2));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #38bdf8;
+            margin-bottom: 20px;
+        }
+
+        .feature-box h3 {
+            font-size: 18px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .feature-box p {
+            font-size: 14px;
+            color: var(--slate-400);
+            line-height: 1.6;
+        }
+
+        /* Pricing Section & Interactive Billing Switch */
+        .pricing-section {
+            padding: 100px 6%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .billing-toggle-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 48px;
+        }
+
+        .billing-toggle-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 4px;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .toggle-option {
+            padding: 8px 18px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--slate-400);
+            transition: all 0.2s ease;
+        }
+
+        .toggle-option.active {
+            background: #0284c7;
+            color: white;
+            box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
+        }
+
+        .save-badge {
+            background: rgba(16, 185, 129, 0.18);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            max-width: 1280px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: rgba(11, 23, 46, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 30px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(56, 189, 248, 0.4);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        .pricing-card.featured {
+            background: linear-gradient(180deg, rgba(14, 165, 233, 0.16) 0%, rgba(11, 23, 46, 0.95) 100%);
+            border: 2px solid #0284c7;
+            box-shadow: 0 0 35px rgba(2, 132, 199, 0.25);
+            transform: scale(1.03);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.03) translateY(-6px);
+        }
+
+        .price-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #0284c7, #0d9488);
+            color: white;
+            font-size: 10px;
+            font-weight: 900;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.06em;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.4);
+        }
+
+        .price-number {
+            font-size: 30px;
+            font-weight: 900;
+            color: white;
+            margin: 18px 0;
+            font-family: var(--font-mono);
+        }
+
+        .feature-check-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 28px;
+            font-size: 13px;
+            color: #cbd5e1;
+        }
+
+        .feature-check-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .feature-check-item i {
+            color: #10b981;
+            font-size: 14px;
+        }
+
+        /* Footer */
+        .landing-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 40px 6%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--slate-400);
+            background: #040814;
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 1024px) {
+            .hero-headline { font-size: 42px; }
+            .preview-window-container { display: none; }
+            .features-grid { grid-template-columns: repeat(2, 1fr); }
+            .pricing-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+            .pricing-card.featured { transform: none; }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .features-grid { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; }
+            .landing-footer { flex-direction: column; gap: 16px; text-align: center; }
+            .trust-metrics-strip { flex-direction: column; gap: 18px; }
+        }
+    </style>
 </head>
 <body>
 
-<!-- Ambient Background Glows -->
-<div class="ambient-glow-layer">
-    <div class="ambient-orb ambient-orb-1"></div>
-    <div class="ambient-orb-2"></div>
-    <div class="ambient-orb-3"></div>
-</div>
+    <!-- Ambient Glowing Orbs -->
+    <div class="ambient-bg">
+        <div class="ambient-glow ambient-glow-1"></div>
+        <div class="ambient-glow-2"></div>
+        <div class="ambient-glow-3"></div>
+    </div>
 
-<!-- Dynamic Confetti Canvas -->
-<canvas id="confetti-canvas"></canvas>
-
-<div class="app-container">
-    <!-- ==========================================================================
-         SIDEBAR NAVIGATION
-         ========================================================================== -->
-    <aside class="app-sidebar">
-        <div class="sidebar-header">
-            <div class="brand-logo-icon">
+    <!-- Navigation -->
+    <nav class="landing-nav">
+        <div class="brand-logo">
+            <div class="brand-logo-badge">
                 <i class="bi bi-hospital-fill"></i>
             </div>
-            <div class="brand-text">
-                <h1>MediOS <span>PRO</span></h1>
-                <p title="Apex Healthcare & Multispeciality Clinic">Apex Healthcare</p>
-            </div>
+            <span>MediOS <span style="color: #38bdf8; font-size: 13px; font-weight: 800; background: rgba(56, 189, 248, 0.15); padding: 2px 7px; border-radius: 6px;">PRO</span></span>
         </div>
 
-        <!-- Tenant Branch Switcher -->
-        <div class="sidebar-tenant-badge" id="roleSwitcherTrigger" title="Click to switch role or view tenant info">
-            <div class="tenant-meta">
-                <span class="label">Facility & Suite</span>
-                <span class="branch-name"><i class="bi bi-geo-alt-fill" style="color: #38bdf8; font-size: 11px;"></i> Main Campus (OPD+Lab)</span>
-            </div>
-            <i class="bi bi-chevron-expand" style="font-size: 13px; color: #94a3b8;"></i>
+        <div class="nav-links">
+            <a href="#preview">Live Preview</a>
+            <a href="#features">Core Features</a>
+            <a href="#pricing">Editions & Pricing</a>
+            <a href="dashboard.html">Direct App Launch</a>
         </div>
 
-        <!-- Navigation Items -->
-        <nav class="sidebar-nav">
-            <div class="nav-group-title">Clinic Core (Phase 1)</div>
+        <div class="nav-cta-group">
+            <a href="login.html" class="btn btn-outline">Staff Portal Login</a>
+            <a href="dashboard.html" class="btn btn-primary"><i class="bi bi-speedometer2"></i> Launch Demo</a>
+        </div>
+    </nav>
 
-            <div class="nav-item active" data-view="dashboard">
-                <i class="bi bi-grid-1x2-fill"></i>
-                <span>Dashboard</span>
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-pill-badge">
+            <i class="bi bi-stars" style="color: #38bdf8;"></i> Enterprise Hospital Operating System (Phases 1, 2 & 3)
+        </div>
+
+        <h1 class="hero-headline">
+            The Intelligent Operating System for <span>Modern Healthcare & Clinics</span>
+        </h1>
+
+        <p class="hero-subtext">
+            Eliminate operational friction with single-screen Doctor EMR, automated token queues, FEFO pharmacy inventory, NABL pathology verification, and zero-leakage POS billing.
+        </p>
+
+        <div class="hero-cta-wrap">
+            <a href="dashboard.html" class="btn btn-primary btn-lg"><i class="bi bi-play-circle-fill"></i> Explore Live Demo OS</a>
+            <a href="login.html" class="btn btn-outline btn-lg"><i class="bi bi-shield-lock-fill"></i> Staff Login Hub</a>
+        </div>
+
+        <div class="trust-metrics-strip">
+            <div class="metric-item">
+                <div class="metric-val" data-target="4.2">4.2M+</div>
+                <div class="metric-label">Consultations Delivered</div>
             </div>
-
-            <div class="nav-item" data-view="patients">
-                <i class="bi bi-people-fill"></i>
-                <span>Patients & EMR</span>
-                <span class="nav-badge">1.4k</span>
+            <div class="metric-item">
+                <div class="metric-val" data-target="14800">14,800+</div>
+                <div class="metric-label">Doctors & Specialists</div>
             </div>
-
-            <div class="nav-item" data-view="appointments">
-                <i class="bi bi-calendar-event-fill"></i>
-                <span>Appointments</span>
-                <span class="nav-badge">5 Today</span>
+            <div class="metric-item">
+                <div class="metric-val" data-target="99.99">99.99%</div>
+                <div class="metric-label">Uptime SLA</div>
             </div>
-
-            <div class="nav-item" data-view="queue">
-                <i class="bi bi-ticket-perforated-fill"></i>
-                <span>Live OPD Queue</span>
-                <span class="nav-badge pulse-red">5 Live</span>
+            <div class="metric-item">
+                <div class="metric-val">< 1.2s</div>
+                <div class="metric-label">Avg Encounter Lock Speed</div>
             </div>
+        </div>
+    </section>
 
-            <div class="nav-item" data-view="emr">
-                <i class="bi bi-heart-pulse-fill"></i>
-                <span>Doctor Cockpit</span>
-                <span class="nav-badge live-green">EMR</span>
-            </div>
-
-            <div class="nav-item" data-view="billing">
-                <i class="bi bi-receipt-cutoff"></i>
-                <span>Billing Desk (POS)</span>
-            </div>
-
-            <div class="nav-group-title">Phase 3: Pharmacy & Lab</div>
-
-            <div class="nav-item" data-view="pharmacy">
-                <i class="bi bi-capsule-pill"></i>
-                <span>Pharmacy & Stock</span>
-                <span class="nav-badge badge-lab">FEFO</span>
-            </div>
-
-            <div class="nav-item" data-view="lab">
-                <i class="bi bi-eyedropper"></i>
-                <span>Pathology & Lab</span>
-                <span class="nav-badge pulse-red">3 Active</span>
-            </div>
-
-            <div class="nav-item" data-view="payouts">
-                <i class="bi bi-calculator-fill"></i>
-                <span>Doctor Revenue Share</span>
-                <span class="nav-badge">70/30</span>
-            </div>
-
-            <div class="nav-group-title">Phase 2: Patient Experience</div>
-
-            <div class="nav-item" data-view="portal">
-                <i class="bi bi-phone-vibrate-fill"></i>
-                <span>Patient Portal</span>
-                <span class="nav-badge badge-pro">PRO</span>
-            </div>
-
-            <div class="nav-item" data-view="online-booking">
-                <i class="bi bi-globe2"></i>
-                <span>Public Booking</span>
-                <span class="nav-badge badge-pro">PRO</span>
-            </div>
-
-            <div class="nav-item" data-view="analytics">
-                <i class="bi bi-graph-up-arrow"></i>
-                <span>Clinic Analytics</span>
-            </div>
-
-            <div class="nav-item" data-view="leaves-waitlist">
-                <i class="bi bi-calendar-x-fill"></i>
-                <span>Leaves & Waitlist</span>
-            </div>
-
-            <div class="nav-item" data-view="feedback">
-                <i class="bi bi-star-fill" style="color: #f59e0b;"></i>
-                <span>NPS & Feedback</span>
-            </div>
-
-            <div class="nav-group-title">SaaS & Governance</div>
-
-            <div class="nav-item" data-view="subscriptions">
-                <i class="bi bi-gem"></i>
-                <span>Plans & Add-ons</span>
-            </div>
-
-            <div class="nav-item" data-view="audit">
-                <i class="bi bi-shield-check"></i>
-                <span>Audit & Security</span>
-            </div>
-
-            <div class="nav-item" data-view="settings">
-                <i class="bi bi-sliders2-vertical"></i>
-                <span>Clinic Settings</span>
-            </div>
-        </nav>
-
-        <!-- Current User Profile in Footer -->
-        <div class="sidebar-footer">
-            <div class="user-profile-card" onclick="document.getElementById('roleSwitcherModal').classList.add('active')">
-                <div class="user-avatar-wrap">
-                    <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80" alt="Dr. Rajeshwar">
-                    <div class="status-dot"></div>
+    <!-- Interactive Live Preview Mockup -->
+    <section id="preview" style="padding: 0 5% 100px; position: relative; z-index: 1;">
+        <div class="preview-window-container">
+            <div class="mockup-titlebar">
+                <div class="traffic-lights">
+                    <div class="traffic-dot dot-red"></div>
+                    <div class="traffic-dot dot-yellow"></div>
+                    <div class="traffic-dot dot-green"></div>
                 </div>
-                <div class="user-info">
-                    <div class="user-name">Dr. Rajeshwar S.</div>
-                    <div class="user-role-tag">
-                        <i class="bi bi-shield-check"></i> <span id="currentRoleBadge">Doctor</span>
+                <div class="mockup-address-bar">
+                    <i class="bi bi-lock-fill" style="color: #10b981;"></i> https://apex-healthcare.medios.app/live-cockpit
+                </div>
+                <div style="font-family: var(--font-mono); font-size: 11px; color: #10b981; display: flex; align-items: center; gap: 6px;">
+                    <span style="width: 7px; height: 7px; border-radius: 50%; background: #10b981; display: inline-block;"></span> LIVE
+                </div>
+            </div>
+
+            <div class="mockup-content">
+                <!-- Mock Sidebar -->
+                <div class="mock-sidebar">
+                    <div style="font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 12px;">CLINIC CORE</div>
+                    <div class="mock-nav-item active"><i class="bi bi-grid-1x2-fill"></i> Dashboard</div>
+                    <div class="mock-nav-item"><i class="bi bi-ticket-perforated-fill"></i> OPD Queue <span style="margin-left: auto; background: #e11d48; color: white; font-size: 9px; padding: 2px 5px; border-radius: 10px;">5 Live</span></div>
+                    <div class="mock-nav-item"><i class="bi bi-heart-pulse-fill"></i> Doctor EMR</div>
+                    <div class="mock-nav-item"><i class="bi bi-receipt-cutoff"></i> POS Billing</div>
+                    <div class="mock-nav-item"><i class="bi bi-capsule-pill"></i> Pharmacy FEFO</div>
+                    <div class="mock-nav-item"><i class="bi bi-eyedropper"></i> Pathology Lab</div>
+                </div>
+
+                <!-- Mock Main Workspace -->
+                <div class="mock-main">
+                    <div class="mock-kpi-row">
+                        <div class="mock-kpi-card">
+                            <div style="font-size: 11px; color: #94a3b8;">Today's Footfall</div>
+                            <div style="font-size: 20px; font-weight: 800; color: white; margin-top: 4px;" id="heroKpiFootfall">48 Patients</div>
+                            <div style="font-size: 10.5px; color: #10b981; margin-top: 2px;">+14% vs yesterday</div>
+                        </div>
+                        <div class="mock-kpi-card">
+                            <div style="font-size: 11px; color: #94a3b8;">Live In-Consultation</div>
+                            <div style="font-size: 20px; font-weight: 800; color: #38bdf8; margin-top: 4px;">Token <span id="heroActiveTokenNum">T-04</span></div>
+                            <div style="font-size: 10.5px; color: #94a3b8; margin-top: 2px;">Dr. Rajeshwar (Room 2)</div>
+                        </div>
+                        <div class="mock-kpi-card">
+                            <div style="font-size: 11px; color: #94a3b8;">Avg Wait Time</div>
+                            <div style="font-size: 20px; font-weight: 800; color: #34d399; margin-top: 4px;">6.4 Mins</div>
+                            <div style="font-size: 10.5px; color: #34d399; margin-top: 2px;">Optimal Flow</div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Queue Simulator Card -->
+                    <div style="background: #09152b; border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <div style="font-size: 12px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">âš¡ Interactive Queue Simulator</div>
+                            <div style="font-size: 13.5px; font-weight: 700; color: white; margin-top: 2px;">Calling Next OPD Patient Token</div>
+                            <div style="font-size: 11.5px; color: #94a3b8;">Click below to simulate real-time token broadcast with audio chime.</div>
+                        </div>
+                        <button class="btn btn-primary" id="heroSimulateTokenBtn" style="padding: 9px 18px; font-size: 12.5px;">
+                            <i class="bi bi-volume-up-fill"></i> Call Next Token (Chime)
+                        </button>
+                    </div>
+
+                    <!-- Doctor Quick EMR Snippet -->
+                    <div style="background: #091224; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; padding: 14px; font-size: 12px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="font-weight: 700; color: white;"><i class="bi bi-person-circle" style="color: #38bdf8;"></i> Vikramaditya Sharma (42M | MRN-2026-0101)</span>
+                            <span style="color: #10b981; font-weight: 700;">BP 138/88 | BMI 25.5</span>
+                        </div>
+                        <div style="color: #94a3b8; font-size: 11.5px; line-height: 1.4;">
+                            Diagnosis: <strong>E11.9 - Type 2 Diabetes Mellitus</strong> | Rx: Tab Glycomet GP 1/500 (1-0-1), Tab Telma 40 (1-0-0)
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </aside>
 
-    <!-- ==========================================================================
-         MAIN CONTENT AREA
-         ========================================================================== -->
-    <main class="app-main">
-        <!-- Top App Header -->
-        <header class="app-header">
-            <div class="header-left">
-                <div class="page-breadcrumb">
-                    <span class="section-name" id="headerSectionName">Operations Hub</span>
-                    <h2 class="page-title" id="headerPageTitle">Clinical & Operations Dashboard</h2>
-                </div>
-
-                <!-- Global Search -->
-                <div class="header-search">
-                    <i class="bi bi-search search-icon"></i>
-                    <input type="text" id="globalSearchInput" placeholder="Search patient, medicine, lab test, MRN...">
-                    <span class="search-kbd">Ctrl + K</span>
-                </div>
-            </div>
-
-            <div class="header-right">
-                <a href="landing.html" class="header-btn-icon" title="View Public Landing Page">
-                    <i class="bi bi-house-door-fill"></i>
-                </a>
-
-                <div class="clinic-status-chip">
-                    <div class="live-indicator"></div>
-                    <span id="liveTimeClock">09:45 AM | 05 Oct 2026</span>
-                </div>
-
-                <!-- Global Sound FX Toggle -->
-                <button class="header-btn-icon audio-toggle-btn active-sound" id="globalAudioToggleBtn" title="Toggle Tactile Audio & Queue Chimes">
-                    <i class="bi bi-volume-up-fill" id="audioToggleIcon"></i>
-                </button>
-
-                <!-- Role Switcher Trigger -->
-                <button class="role-switcher-btn" onclick="document.getElementById('roleSwitcherModal').classList.add('active')">
-                    <i class="bi bi-person-badge-fill"></i>
-                    <span id="headerUserRoleTag">Doctor Mode</span>
-                    <i class="bi bi-chevron-down" style="font-size: 10px;"></i>
-                </button>
-
-                <!-- TV Board Mode -->
-                <button class="header-btn-icon" id="toggleTvBoardBtn" title="Launch Waiting Room TV Display">
-                    <i class="bi bi-display"></i>
-                </button>
-
-                <!-- QR Check-in Trigger -->
-                <button class="header-btn-icon" onclick="openQrCheckInModal()" title="Simulate QR Self Check-in Kiosk">
-                    <i class="bi bi-qr-code-scan"></i>
-                </button>
-
-                <!-- New Patient Quick Action -->
-                <button class="btn btn-primary btn-sm" onclick="openNewPatientModal()">
-                    <i class="bi bi-person-plus-fill"></i> New Patient
-                </button>
-
-                <!-- Logout / Switch Account -->
-                <a href="login.html" class="header-btn-icon" title="Sign Out / Switch Staff Account" style="color: var(--rose-500);">
-                    <i class="bi bi-box-arrow-right"></i>
-                </a>
-            </div>
-        </header>
-
-        <!-- Viewport for dynamic panels -->
-        <div class="content-viewport">
-
-            <!-- ==================================================================
-                 VIEW 1: DASHBOARD
-                 ================================================================== -->
-            <section class="view-section active" id="view-dashboard">
-                <div class="quick-action-banner">
+                <!-- Mock Right Panel -->
+                <div class="mock-right">
                     <div>
-                        <h2>Apex Healthcare & Multispeciality Diagnostic Centre</h2>
-                        <p>Phase 1 + 2 + 3 Suite • Integrated Pharmacy FEFO, Pathology Worklist & Maker-Checker Verification</p>
+                        <div style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px;">Live Queue Board</div>
+                        <div style="background: rgba(14, 165, 233, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); padding: 10px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <span style="font-weight: 800; color: #38bdf8;" id="heroBoardCurrentToken">T-04: In Room 2</span>
+                            <span style="font-size: 10px; background: #0ea5e9; color: white; padding: 2px 6px; border-radius: 4px;">ACTIVE</span>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.04); padding: 8px; border-radius: 6px; margin-bottom: 6px; display: flex; justify-content: space-between; font-size: 11px;" id="heroNextQueue1">
+                            <span>Token T-05: Waiting</span>
+                            <span style="color: #94a3b8;">2 min</span>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.04); padding: 8px; border-radius: 6px; display: flex; justify-content: space-between; font-size: 11px;" id="heroNextQueue2">
+                            <span>Token T-06: Waiting</span>
+                            <span style="color: #94a3b8;">8 min</span>
+                        </div>
                     </div>
-                    <div class="quick-action-buttons">
-                        <button class="btn btn-emerald btn-sm" data-switch-view="pharmacy">
-                            <i class="bi bi-capsule"></i> Pharmacy Dispense
-                        </button>
-                        <button class="btn btn-primary btn-sm" data-switch-view="lab">
-                            <i class="bi bi-eyedropper"></i> Lab Worklist (3)
-                        </button>
-                        <button class="btn btn-teal btn-sm" onclick="quickStartConsultation('PAT-2026-0101')">
-                            <i class="bi bi-stethoscope"></i> Doctor Cockpit
-                        </button>
-                    </div>
+                    <a href="dashboard.html" class="btn btn-outline" style="width: 100%; font-size: 11.5px; padding: 8px;">
+                        Open Full OS Screen â†’
+                    </a>
                 </div>
-
-                <div class="kpi-grid">
-                    <div class="kpi-card kpi-blue">
-                        <div class="kpi-info">
-                            <div class="kpi-label">Today's Footfall</div>
-                            <div class="kpi-value">42</div>
-                            <div class="kpi-trend trend-up"><i class="bi bi-arrow-up-right"></i> +18% vs last week</div>
-                        </div>
-                        <div class="kpi-icon-wrap"><i class="bi bi-people-fill"></i></div>
-                    </div>
-
-                    <div class="kpi-card kpi-teal">
-                        <div class="kpi-info">
-                            <div class="kpi-label">Pharmacy Dispense</div>
-                            <div class="kpi-value">₹ 24,190</div>
-                            <div class="kpi-trend" style="color: var(--teal-600);"><i class="bi bi-capsule-pill"></i> 38 Prescriptions</div>
-                        </div>
-                        <div class="kpi-icon-wrap"><i class="bi bi-shop"></i></div>
-                    </div>
-
-                    <div class="kpi-card kpi-emerald">
-                        <div class="kpi-info">
-                            <div class="kpi-label">Diagnostic Tests Done</div>
-                            <div class="kpi-value">32 Orders</div>
-                            <div class="kpi-trend trend-up"><i class="bi bi-check2-all"></i> Avg TAT: 2.8 hrs</div>
-                        </div>
-                        <div class="kpi-icon-wrap"><i class="bi bi-eyedropper"></i></div>
-                    </div>
-
-                    <div class="kpi-card kpi-indigo">
-                        <div class="kpi-info">
-                            <div class="kpi-label">Total Revenue Collected</div>
-                            <div class="kpi-value">₹ 54,830</div>
-                            <div class="kpi-trend trend-up"><i class="bi bi-qr-code"></i> UPI: ₹38.4k | Cash: ₹16.4k</div>
-                        </div>
-                        <div class="kpi-icon-wrap"><i class="bi bi-currency-rupee"></i></div>
-                    </div>
-                </div>
-
-                <div class="dashboard-columns">
-                    <div class="card">
-                        <div class="card-header">
-                            <div>
-                                <h3 class="card-title"><i class="bi bi-hospital" style="color: var(--primary-600);"></i> OPD Consulting Doctors & Room Allocation</h3>
-                                <p class="card-subtitle">Real-time doctor roster and waiting queues</p>
-                            </div>
-                            <button class="btn btn-outline btn-sm" data-switch-view="appointments">View Schedule</button>
-                        </div>
-                        <div class="doctor-status-grid" id="dashDoctorStatusGrid"></div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <div>
-                                <h3 class="card-title"><i class="bi bi-activity" style="color: var(--emerald-600);"></i> Live Activity & Order Stream</h3>
-                                <p class="card-subtitle">Connected Consultation, Pharmacy & Lab events</p>
-                            </div>
-                            <button class="btn btn-outline btn-sm" data-switch-view="audit">All Logs</button>
-                        </div>
-                        <div id="dashRecentActivityList"></div>
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- ==================================================================
-                 PHASE 3 VIEW 1: PHARMACY & BATCH STOCK LEDGER (M10, PHA-01 - 07)
-                 ================================================================== -->
-            <section class="view-section" id="view-pharmacy">
-                <!-- Pharmacy Metrics -->
-                <div class="queue-summary-bar">
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Inventory Value</div>
-                            <div style="font-size: 22px; font-weight: 800; color: var(--text-primary);">₹ 4,82,450</div>
-                        </div>
-                        <i class="bi bi-boxes" style="font-size: 28px; color: var(--primary-600);"></i>
-                    </div>
-
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--rose-600); text-transform: uppercase;">Near Expiry (Within 30d)</div>
-                            <div style="font-size: 22px; font-weight: 800; color: var(--rose-600);">1 Batch Alert</div>
-                        </div>
-                        <i class="bi bi-exclamation-triangle-fill" style="font-size: 28px; color: var(--rose-500);"></i>
-                    </div>
-
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--amber-600); text-transform: uppercase;">Low Stock Warning</div>
-                            <div style="font-size: 22px; font-weight: 800; color: var(--amber-600);">1 Medicine (<100)</div>
-                        </div>
-                        <i class="bi bi-battery-charging" style="font-size: 28px; color: var(--amber-500);"></i>
-                    </div>
-
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--emerald-600); text-transform: uppercase;">Drug License Reg</div>
-                            <div style="font-size: 14px; font-weight: 800; color: var(--emerald-600);">MH-MZ4-2024-88412</div>
-                        </div>
-                        <i class="bi bi-shield-check" style="font-size: 28px; color: var(--emerald-500);"></i>
-                    </div>
-                </div>
-
-                <!-- Main Pharmacy Workspace -->
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <h3 class="card-title"><i class="bi bi-capsule-pill" style="color: var(--teal-600);"></i> Pharmacy Inventory & FEFO Batch Ledger</h3>
-                            <p class="card-subtitle">First-Expiry-First-Out dispensing, Schedule H compliance and supplier purchase orders</p>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-teal" onclick="openPharmacyDispenseModal()">
-                                <i class="bi bi-upc-scan"></i> Dispense Against Rx
-                            </button>
-                            <button class="btn btn-primary" onclick="openNewGrnModal()">
-                                <i class="bi bi-plus-circle"></i> + Add GRN Stock
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Medicine Brand & Generic</th>
-                                    <th>Batch Number</th>
-                                    <th>Expiry Date</th>
-                                    <th>Available Stock</th>
-                                    <th>Purchase / MRP (₹)</th>
-                                    <th>Rack Location</th>
-                                    <th>Schedule & Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="pharmacyBatchesTableBody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- ==================================================================
-                 PHASE 3 VIEW 2: PATHOLOGY & LAB WORKLIST (M11, LAB-01 - 07)
-                 ================================================================== -->
-            <section class="view-section" id="view-lab">
-                <!-- Lab Overview Bar -->
-                <div class="queue-summary-bar">
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Orders Today</div>
-                            <div style="font-size: 22px; font-weight: 800; color: var(--text-primary);">32 Tests</div>
-                        </div>
-                        <i class="bi bi-eyedropper" style="font-size: 28px; color: var(--primary-600);"></i>
-                    </div>
-
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--amber-600); text-transform: uppercase;">Pending Pathologist Sign</div>
-                            <div style="font-size: 22px; font-weight: 800; color: var(--amber-600);">1 Ready Review</div>
-                        </div>
-                        <i class="bi bi-person-badge" style="font-size: 28px; color: var(--amber-500);"></i>
-                    </div>
-
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--emerald-600); text-transform: uppercase;">Reports Released</div>
-                            <div style="font-size: 22px; font-weight: 800; color: var(--emerald-600);">29 Released</div>
-                        </div>
-                        <i class="bi bi-file-earmark-check-fill" style="font-size: 28px; color: var(--emerald-500);"></i>
-                    </div>
-
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Laboratory Director</div>
-                            <div style="font-size: 13.5px; font-weight: 800; color: var(--primary-600);">Dr. Meera Kulkarni</div>
-                            <div style="font-size: 10.5px; color: var(--text-muted);">MD Pathology (MMC-2010)</div>
-                        </div>
-                        <i class="bi bi-award-fill" style="font-size: 28px; color: var(--indigo-500);"></i>
-                    </div>
-                </div>
-
-                <!-- Lab Active Worklist -->
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <h3 class="card-title"><i class="bi bi-clipboard2-pulse-fill" style="color: var(--primary-600);"></i> Pathology & Radiology Active Worklist</h3>
-                            <p class="card-subtitle">Sample Barcode tracking, Result Entry and Maker-Checker Verification Desk</p>
-                        </div>
-                        <button class="btn btn-outline btn-sm" onclick="renderLabWorklist()">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh Worklist
-                        </button>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Sample Barcode & Order</th>
-                                    <th>Patient Details</th>
-                                    <th>Test Requested</th>
-                                    <th>Category & Tube Top</th>
-                                    <th>Sample Status</th>
-                                    <th>Verification State</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="labWorklistTableBody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- ==================================================================
-                 PHASE 3 VIEW 3: DOCTOR REVENUE SHARE & PAYOUTS (OPS-01, M28)
-                 ================================================================== -->
-            <section class="view-section" id="view-payouts">
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <h3 class="card-title"><i class="bi bi-calculator-fill" style="color: var(--primary-600);"></i> Visiting Consultant Revenue Share & Payout Statements</h3>
-                            <p class="card-subtitle">Automated split calculation based on agreed percentage rules & TDS deduction</p>
-                        </div>
-                        <button class="btn btn-primary btn-sm" onclick="showToast('Exported Doctor Payout Statement (Excel/PDF)')">
-                            <i class="bi bi-file-earmark-spreadsheet"></i> Export Monthly Payout
-                        </button>
-                    </div>
-
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Doctor Name & Specialty</th>
-                                    <th>Monthly Consultations</th>
-                                    <th>Gross OPD Revenue (₹)</th>
-                                    <th>Agreed Revenue Share</th>
-                                    <th>Doctor Earnings (₹)</th>
-                                    <th>Hospital Retained (30%)</th>
-                                    <th>Payout Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="doctorPayoutsTableBody">
-                                <!-- Populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-
-            <!-- ==================================================================
-                 PRESERVED VIEWS FROM PHASE 1 & PHASE 2
-                 ================================================================== -->
-            <!-- Patients Directory -->
-            <section class="view-section" id="view-patients">
-                <div class="card">
-                    <div class="patient-header-bar">
-                        <div class="filter-bar">
-                            <div style="position: relative; flex: 1;">
-                                <i class="bi bi-search search-icon" style="position: absolute; left: 12px; top: 10px; color: var(--text-muted);"></i>
-                                <input type="text" id="patientDirectorySearch" class="form-control" style="padding-left: 36px;" placeholder="Search by Patient Name, Phone, MRN or Blood Group...">
-                            </div>
-                        </div>
-                        <button class="btn btn-primary" onclick="openNewPatientModal()">
-                            <i class="bi bi-person-plus-fill"></i> Register New Patient
-                        </button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Patient Details & MRN</th>
-                                    <th>Age / Gender</th>
-                                    <th>Contact & Email</th>
-                                    <th>Blood Group</th>
-                                    <th>Allergies & Risk Flags</th>
-                                    <th>Last Visit</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="patientsTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Appointments -->
-            <section class="view-section" id="view-appointments">
-                <div class="card">
-                    <div class="patient-header-bar">
-                        <div>
-                            <h3 class="card-title"><i class="bi bi-calendar-check" style="color: var(--primary-600);"></i> Today's Appointment Schedule</h3>
-                            <p class="card-subtitle">Confirmed appointments, slot timings and token issuance</p>
-                        </div>
-                        <div style="display: flex; gap: 10px;">
-                            <button class="btn btn-outline" data-switch-view="queue"><i class="bi bi-ticket-perforated"></i> View Queue Board</button>
-                            <button class="btn btn-primary" onclick="openBookAppointmentModal()"><i class="bi bi-calendar-plus"></i> Book New Appointment</button>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Appt ID</th>
-                                    <th>Patient Name</th>
-                                    <th>Doctor & Specialty</th>
-                                    <th>Time Slot</th>
-                                    <th>Visit Reason</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="appointmentsTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Live OPD Queue -->
-            <section class="view-section" id="view-queue">
-                <div class="queue-summary-bar">
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Tokens Today</div>
-                            <div style="font-size: 24px; font-weight: 800; color: var(--text-primary);">42 Issued</div>
-                        </div>
-                        <i class="bi bi-ticket-detailed" style="font-size: 28px; color: var(--primary-600);"></i>
-                    </div>
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--amber-600); text-transform: uppercase;">Currently In Queue</div>
-                            <div style="font-size: 24px; font-weight: 800; color: var(--amber-600);">5 Waiting</div>
-                        </div>
-                        <i class="bi bi-hourglass-split" style="font-size: 28px; color: var(--amber-500);"></i>
-                    </div>
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--emerald-600); text-transform: uppercase;">In Consultation</div>
-                            <div style="font-size: 24px; font-weight: 800; color: var(--emerald-600);">2 Inside Rooms</div>
-                        </div>
-                        <i class="bi bi-person-check-fill" style="font-size: 28px; color: var(--emerald-500);"></i>
-                    </div>
-                    <div class="queue-metric-box">
-                        <div>
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Lobby Display TV</div>
-                            <button class="btn btn-sm btn-primary" onclick="document.getElementById('tvWaitingBoardOverlay').classList.add('active'); renderTVWaitingBoard();" style="margin-top: 4px;">
-                                <i class="bi bi-tv"></i> Launch Fullscreen
-                            </button>
-                        </div>
-                        <i class="bi bi-display" style="font-size: 28px; color: var(--indigo-500);"></i>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <div>
-                            <h3 class="card-title"><i class="bi bi-broadcast" style="color: var(--primary-600);"></i> Live OPD Waiting & Token Call Desk</h3>
-                            <p class="card-subtitle">Call patients with sound chime, update room routing and manage queue flow</p>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead>
-                                <tr>
-                                    <th>Token No</th>
-                                    <th>Patient Name & Contact</th>
-                                    <th>Doctor & Room</th>
-                                    <th>Arrival Time</th>
-                                    <th>Queue Status</th>
-                                    <th>Vitals Status</th>
-                                    <th>Queue Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="queueTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Doctor EMR Cockpit with Drug Interaction Alerts -->
-            <section class="view-section" id="view-emr">
-                <!-- Drug Allergy Safety Warning Banner (CLN-01) -->
-                <div class="safety-alert-banner" id="emrDrugSafetyBanner" style="display: none;">
-                    <div>
-                        <div class="safety-alert-title"><i class="bi bi-shield-fill-x"></i> CLINICAL SAFETY WARNING: Drug-Allergy Conflict Detected!</div>
-                        <div style="font-size: 12.5px; margin-top: 4px;">Patient has documented <b>Penicillin allergy</b>. Prescribing Amoxicillin / Augmentin has severe risk of Anaphylaxis.</div>
-                    </div>
-                    <button class="btn btn-sm btn-outline" style="background: white; color: #e11d48; border-color: #f43f5e;" onclick="overrideClinicalSafetyAlert()">
-                        Override with Doctor Reason
-                    </button>
-                </div>
-
-                <div class="emr-cockpit">
-                    <!-- Left: Patient Snapshot -->
-                    <div class="emr-patient-panel">
-                        <img id="emrPatientAvatar" class="emr-patient-avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80" alt="">
-                        <div class="emr-patient-meta">
-                            <h3 id="emrPatientName">Vikramaditya Verma</h3>
-                            <p id="emrPatientMrn">MRN-90142 • ABHA: 91-4821-0042-9901</p>
-                            <p id="emrPatientMeta" style="margin-top: 2px;">48 Yrs / Male • Blood Group: O+</p>
-                        </div>
-
-                        <div style="margin-bottom: 12px;">
-                            <div style="font-size: 11px; font-weight: 700; color: var(--rose-600); text-transform: uppercase; margin-bottom: 4px;">Known Allergies</div>
-                            <div id="emrPatientAllergies">
-                                <span class="allergy-chip">Penicillin</span>
-                                <span class="allergy-chip">Sulfa drugs</span>
-                            </div>
-                        </div>
-
-                        <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Patient Vitals</div>
-                        <div class="vitals-grid-compact">
-                            <div class="vital-box">
-                                <div class="vital-name">BP (mmHg)</div>
-                                <input type="text" class="form-control" id="emrVitalsBp" value="138/88" style="padding: 2px 6px; font-size: 12px; font-weight: 700;">
-                            </div>
-                            <div class="vital-box">
-                                <div class="vital-name">Pulse (bpm)</div>
-                                <input type="number" class="form-control" id="emrVitalsPulse" value="78" style="padding: 2px 6px; font-size: 12px; font-weight: 700;">
-                            </div>
-                            <div class="vital-box">
-                                <div class="vital-name">SpO2 (%)</div>
-                                <input type="number" class="form-control" id="emrVitalsSpo2" value="98" style="padding: 2px 6px; font-size: 12px; font-weight: 700;">
-                            </div>
-                            <div class="vital-box">
-                                <div class="vital-name">Temp (°F)</div>
-                                <input type="number" step="0.1" class="form-control" id="emrVitalsTemp" value="98.6" style="padding: 2px 6px; font-size: 12px; font-weight: 700;">
-                            </div>
-                            <div class="vital-box">
-                                <div class="vital-name">Weight (kg)</div>
-                                <input type="number" class="form-control" id="emrVitalsWeight" value="79" style="padding: 2px 6px; font-size: 12px; font-weight: 700;">
-                            </div>
-                            <div class="vital-box">
-                                <div class="vital-name">Height (cm)</div>
-                                <input type="number" class="form-control" id="emrVitalsHeight" value="176" style="padding: 2px 6px; font-size: 12px; font-weight: 700;">
-                            </div>
-                        </div>
-                        <div style="background: var(--bg-main); padding: 8px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; font-size: 12px;">
-                            <span style="font-weight: 600; color: var(--text-secondary);">Calculated BMI:</span>
-                            <b id="emrVitalsBmi" style="color: var(--primary-600);">25.5 (Overweight)</b>
-                        </div>
-
-                        <button class="btn btn-outline btn-sm" style="width: 100%; margin-top: 14px;" onclick="openPatientHistory('PAT-2026-0101')">
-                            <i class="bi bi-clock-history"></i> Full Medical History
-                        </button>
-                    </div>
-
-                    <!-- Center: Encounter Notes -->
-                    <div class="emr-encounter-studio">
-                        <div class="clinical-section">
-                            <div class="clinical-section-title">
-                                <span><i class="bi bi-chat-left-dots-fill" style="color: var(--primary-600);"></i> Chief Complaints & HPI</span>
-                                <span style="font-size: 11px; color: var(--text-muted);">Quick Symptom Tags</span>
-                            </div>
-                            <textarea id="emrChiefComplaints" class="form-control" rows="3" placeholder="Enter patient complaints..."></textarea>
-                            
-                            <div class="quick-chip-container">
-                                <span class="quick-chip" onclick="addComplaintTag('Fever with chills')">+ Fever with chills</span>
-                                <span class="quick-chip" onclick="addComplaintTag('Dry cough 3 days')">+ Dry cough</span>
-                                <span class="quick-chip" onclick="addComplaintTag('Morning fasting glucose high')">+ High FBS</span>
-                                <span class="quick-chip" onclick="addComplaintTag('Occipital headache')">+ Headache</span>
-                            </div>
-                        </div>
-
-                        <div class="clinical-section">
-                            <div class="clinical-section-title">
-                                <span><i class="bi bi-diagram-3-fill" style="color: var(--teal-600);"></i> ICD-10 Diagnosis</span>
-                            </div>
-                            <select id="emrDiagnosisSelect" class="form-control">
-                                <option value="E11.9 - Type 2 Diabetes Mellitus with Essential Hypertension (I10)">E11.9 - Type 2 Diabetes Mellitus with Essential Hypertension (I10)</option>
-                                <option value="J06.9 - Acute Upper Respiratory Infection (URTI)">J06.9 - Acute Upper Respiratory Infection (URTI)</option>
-                                <option value="I10 - Essential (Primary) Hypertension">I10 - Essential (Primary) Hypertension</option>
-                            </select>
-                        </div>
-
-                        <div class="clinical-section">
-                            <div class="clinical-section-title">
-                                <span><i class="bi bi-eyedropper" style="color: var(--indigo-600);"></i> Diagnostic Pathology & Lab Orders (M11)</span>
-                                <span style="font-size: 11px; color: var(--emerald-600); font-weight: 700;">Auto-routes to Lab Worklist</span>
-                            </div>
-                            <div class="form-row" id="emrLabOrdersGrid"></div>
-                        </div>
-
-                        <div class="clinical-section">
-                            <div class="clinical-section-title">
-                                <span><i class="bi bi-card-text" style="color: var(--emerald-600);"></i> Clinical Advice & Instructions</span>
-                            </div>
-                            <textarea id="emrClinicalAdvice" class="form-control" rows="2" placeholder="Lifestyle advice, diet restrictions..."></textarea>
-                        </div>
-                    </div>
-
-                    <!-- Right: Active Prescription Studio -->
-                    <div class="emr-rx-panel">
-                        <div class="card-header" style="margin-bottom: 10px;">
-                            <h4 style="font-size: 14px; font-weight: 800; color: var(--text-primary);">
-                                <i class="bi bi-prescription2" style="color: #0d9488;"></i> Active Prescription (℞)
-                            </h4>
-                            <button class="btn btn-sm btn-primary" onclick="openAddMedicineModal()"><i class="bi bi-plus"></i> Add Med</button>
-                        </div>
-
-                        <div style="margin-bottom: 12px;">
-                            <div style="font-size: 10.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Clinical Prescribing Templates</div>
-                            <div style="display: flex; flex-direction: column; gap: 4px;">
-                                <button class="btn btn-sm btn-outline" style="text-align: left; justify-content: flex-start; font-size: 11px; padding: 4px 8px;" onclick="applyRxTemplate(0)">
-                                    <i class="bi bi-lightning-charge-fill" style="color: var(--amber-500);"></i> Type-2 DM + HTN Set
-                                </button>
-                                <button class="btn btn-sm btn-outline" style="text-align: left; justify-content: flex-start; font-size: 11px; padding: 4px 8px;" onclick="applyRxTemplate(1)">
-                                    <i class="bi bi-lightning-charge-fill" style="color: var(--amber-500);"></i> Acute Flu / URTI Protocol
-                                </button>
-                            </div>
-                        </div>
-
-                        <div id="emrRxItemsList" class="rx-items-list"></div>
-
-                        <div style="margin-top: 16px; border-top: 1px solid var(--border-subtle); padding-top: 14px;">
-                            <button class="btn btn-teal" style="width: 100%; font-size: 13.5px; padding: 11px;" onclick="lockAndSignPrescription()">
-                                <i class="bi bi-lock-fill"></i> Lock & Sign Prescription
-                            </button>
-                            <button class="btn btn-outline btn-sm" style="width: 100%; margin-top: 6px;" data-switch-view="pharmacy">
-                                <i class="bi bi-capsule"></i> Send to Pharmacy Counter
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Billing POS Desk -->
-            <section class="view-section" id="view-billing">
-                <div class="billing-pos-container">
-                    <div class="card">
-                        <div class="card-header">
-                            <div>
-                                <h3 class="card-title"><i class="bi bi-receipt" style="color: var(--primary-600);"></i> Patient Encounter Billing Desk</h3>
-                                <p class="card-subtitle">Consultation, Diagnostic Orders and Pharmacy Dispensing</p>
-                            </div>
-                            <span class="badge badge-blue">Encounter: #ENC-2026-0312</span>
-                        </div>
-                        <div style="background: var(--bg-main); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-weight: 700; font-size: 14px;">Vikramaditya Verma <span style="color: var(--text-muted); font-size: 12px;">(MRN-90142)</span></div>
-                                <div style="font-size: 12px; color: var(--text-secondary);">Attending: Dr. Rajeshwar Sharma • Dept: General Medicine</div>
-                            </div>
-                            <span class="badge badge-green">Consultation Completed</span>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead>
-                                    <tr>
-                                        <th>Service / Item Description</th>
-                                        <th>Qty</th>
-                                        <th>Rate</th>
-                                        <th>Total</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="billingLineItemsTable"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="billing-summary-card">
-                        <h4 style="font-size: 15px; font-weight: 800; color: var(--text-primary); margin-bottom: 14px;">
-                            <i class="bi bi-wallet2" style="color: var(--emerald-600);"></i> Payment Settlement
-                        </h4>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px;">
-                            <span style="color: var(--text-secondary);">Subtotal:</span>
-                            <b id="billSubtotalDisplay">₹ 2,230</b>
-                        </div>
-                        <div class="total-due-box">
-                            <div class="label">Net Total Payable</div>
-                            <div class="amount" id="billBigTotalDisplay">₹ 2,230</div>
-                        </div>
-                        <div class="payment-mode-selector">
-                            <div class="pay-mode-btn active" data-mode="UPI" onclick="setPaymentMode('UPI')"><i class="bi bi-qr-code"></i> UPI / QR</div>
-                            <div class="pay-mode-btn" data-mode="Cash" onclick="setPaymentMode('Cash')"><i class="bi bi-cash-stack"></i> Cash</div>
-                            <div class="pay-mode-btn" data-mode="Card" onclick="setPaymentMode('Card')"><i class="bi bi-credit-card"></i> Card</div>
-                            <div class="pay-mode-btn" data-mode="TPA" onclick="setPaymentMode('TPA')"><i class="bi bi-shield-plus"></i> Insurance</div>
-                        </div>
-                        <div id="billingUpiQrContainer" style="text-align: center; background: var(--bg-main); padding: 14px; border-radius: var(--radius-md); border: 1px dashed var(--border-medium); margin-bottom: 16px;">
-                            <div style="width: 120px; height: 120px; margin: 0 auto 8px; background: white; padding: 6px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=upi://pay?pa=apexclinic@icici&pn=Apex%20Healthcare&am=2230" alt="UPI QR" style="width: 100%; height: 100%;">
-                            </div>
-                        </div>
-                        <button class="btn btn-emerald btn-lg" style="width: 100%; font-weight: 800;" onclick="processPaymentAndReceipt()">
-                            <i class="bi bi-check-circle-fill"></i> Collect & Print Tax Invoice
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Patient Portal -->
-            <section class="view-section" id="view-portal">
-                <div class="portal-grid-layout">
-                    <div class="portal-profile-card">
-                        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80" alt="">
-                        <h3 style="font-size: 18px; font-weight: 800;">Vikramaditya Verma</h3>
-                        <p style="font-size: 12px; color: var(--text-muted);">MRN-90142 • ABHA: 91-4821-0042-9901</p>
-                        <div class="portal-family-list">
-                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;">Family Accounts</div>
-                            <div class="family-chip-item">
-                                <div><b>Sunita Verma</b> (Spouse)</div>
-                                <span class="badge badge-green">Linked</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <div class="card" style="margin-bottom: 20px;">
-                            <div class="card-header"><h3 class="card-title">My Digital Prescriptions & Lab Reports</h3></div>
-                            <div class="portal-record-card">
-                                <div><b>Prescription #RX-2026-0914</b> (Dr. Rajeshwar Sharma)</div>
-                                <button class="btn btn-teal btn-sm" onclick="lockAndSignPrescription()"><i class="bi bi-download"></i> Download Rx</button>
-                            </div>
-                            <div class="portal-record-card">
-                                <div><b>Diagnostic Lab Report: HbA1c & Fasting Glucose</b></div>
-                                <button class="btn btn-primary btn-sm" onclick="openOfficialLabReportModal('LAB-ORD-9941')"><i class="bi bi-file-text"></i> View Lab PDF</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Public Booking Flow -->
-            <section class="view-section" id="view-online-booking">
-                <div class="public-booking-container">
-                    <div class="booking-header-banner">
-                        <div>
-                            <span style="font-size: 11px; font-weight: 700; text-transform: uppercase; background: rgba(255,255,255,0.2); padding: 3px 8px; border-radius: 4px;">Public Booking Portal</span>
-                            <h2 style="font-size: 22px; font-weight: 800; margin-top: 4px;">Apex Healthcare & Multispeciality Clinic</h2>
-                        </div>
-                        <i class="bi bi-calendar2-check-fill" style="font-size: 28px;"></i>
-                    </div>
-                    <div style="padding: 28px;">
-                        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 12px;">1. Select Consulting Doctor</h4>
-                        <select class="form-control" id="onlineBookingDoctorSelect" style="margin-bottom: 16px;">
-                            <option value="DOC-01">Dr. Rajeshwar Sharma (General Medicine - Fee: ₹800)</option>
-                            <option value="DOC-02">Dr. Ananya Nair (Cardiology - Fee: ₹1,200)</option>
-                        </select>
-                        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 12px;">2. Choose Time Slot</h4>
-                        <div class="slot-grid-picker">
-                            <div class="slot-pill-btn active"><i class="bi bi-clock"></i> 10:30 AM</div>
-                            <div class="slot-pill-btn"><i class="bi bi-clock"></i> 11:00 AM</div>
-                            <div class="slot-pill-btn"><i class="bi bi-clock"></i> 11:30 AM</div>
-                        </div>
-                        <div class="form-row" style="margin-top: 16px;">
-                            <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="onlineBookingPatientName" class="form-control" value="Sunita Verma"></div>
-                            <div class="form-group"><label class="form-label">WhatsApp Number</label><input type="text" id="onlineBookingPatientPhone" class="form-control" value="+91 98210 44522"></div>
-                        </div>
-                        <button class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;" onclick="submitOnlinePublicBooking()">
-                            <i class="bi bi-calendar-check-fill"></i> Confirm & Generate Instant Token
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Analytics -->
-            <section class="view-section" id="view-analytics">
-                <div class="analytics-chart-card">
-                    <div class="card-header"><h3 class="card-title">6-Month Revenue Growth Breakdown (₹)</h3></div>
-                    <div class="css-bar-chart">
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">5.9L</span><div class="bar-fill" style="height: 55%;"></div><span class="bar-label">May</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">6.7L</span><div class="bar-fill" style="height: 62%;"></div><span class="bar-label">Jun</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">7.4L</span><div class="bar-fill" style="height: 70%;"></div><span class="bar-label">Jul</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">8.3L</span><div class="bar-fill" style="height: 78%;"></div><span class="bar-label">Aug</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">9.5L</span><div class="bar-fill" style="height: 90%;"></div><span class="bar-label">Sep</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700; color: var(--emerald-600);">10.6L</span><div class="bar-fill" style="height: 100%; background: linear-gradient(180deg, #10b981, #0d9488);"></div><span class="bar-label" style="color: var(--emerald-600);">Oct (Est)</span></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Doctor Leaves & Waitlist -->
-            <section class="view-section" id="view-leaves-waitlist">
-                <div class="dashboard-columns">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Doctor Leave Planner</h3>
-                            <button class="btn btn-primary btn-sm" onclick="openDoctorLeaveModal()">+ Record Leave</button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="modern-table">
-                                <thead><tr><th>Doctor</th><th>Dates</th><th>Reason</th><th>Status</th></tr></thead>
-                                <tbody id="doctorLeavesTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-header"><h3 class="card-title">Smart Slot Waitlist</h3></div>
-                        <div id="waitlistCardsContainer"></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- NPS & Feedback -->
-            <section class="view-section" id="view-feedback">
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Patient NPS & Feedback Reviews</h3>
-                        <button class="btn btn-primary btn-sm" onclick="openFeedbackSubmissionModal()">+ Submit Review</button>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead><tr><th>Patient</th><th>Doctor</th><th>Rating</th><th>NPS</th><th>Tags</th><th>Comment</th><th>Date</th></tr></thead>
-                            <tbody id="feedbackReviewsTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- SaaS Subscriptions -->
-            <section class="view-section" id="view-subscriptions">
-                <div class="card">
-                    <div class="card-header"><h3 class="card-title">MediOS SaaS Edition & Entitlements</h3></div>
-                    <div class="plans-pricing-grid" id="saasPlansGrid"></div>
-                </div>
-            </section>
-
-            <!-- Audit Trail -->
-            <section class="view-section" id="view-audit">
-                <div class="card">
-                    <div class="card-header"><h3 class="card-title">HIPAA / DPDP System Audit Trail</h3></div>
-                    <div class="table-responsive">
-                        <table class="modern-table">
-                            <thead><tr><th>Audit ID</th><th>Timestamp</th><th>Actor & IP</th><th>Action</th><th>Target Entity</th><th>Details</th></tr></thead>
-                            <tbody id="auditLogsTableBody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Settings -->
-            <section class="view-section" id="view-settings">
-                <div class="card" style="max-width: 900px; margin: 0 auto;">
-                    <div class="card-header"><h3 class="card-title">Clinic & Facility Master Settings</h3></div>
-                    <div class="form-row">
-                        <div class="form-group"><label class="form-label">Clinic Name</label><input type="text" class="form-control" value="Apex Healthcare & Multispeciality Clinic"></div>
-                        <div class="form-group"><label class="form-label">Drug License No (DL)</label><input type="text" class="form-control" value="MH-MZ4-2024-88412"></div>
-                    </div>
-                </div>
-            </section>
-
+            </div>
         </div>
-    </main>
-</div>
+    </section>
 
-
-<!-- ==========================================================================
-     PHASE 3 MODALS: PHARMACY DISPENSE & NABL LAB REPORTS
-     ========================================================================== -->
-
-<!-- 1. Pharmacy Dispense Against Prescription Modal (PHA-04) -->
-<div class="modal-backdrop" id="pharmacyDispenseModal">
-    <div class="modal-box modal-lg">
-        <div class="modal-header">
-            <h3 class="modal-title"><i class="bi bi-capsule-pill" style="color: var(--teal-600);"></i> Pharmacy Dispensing Counter (FEFO Auto-Batch)</h3>
-            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+    <!-- Core Features Grid -->
+    <section class="features-section" id="features">
+        <div class="section-header">
+            <div class="section-tag">Enterprise Clinical Capabilities</div>
+            <h2 class="section-title">Engineered to Run Healthcare with Precision</h2>
+            <p class="section-desc">Designed with clinical advisors to eliminate duplicate typing and speed up daily doctor-patient encounters.</p>
         </div>
-        <div class="modal-body">
-            <div style="background: var(--bg-main); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+
+        <div class="features-grid">
+            <div class="feature-box">
+                <div class="feature-icon-wrap"><i class="bi bi-stethoscope"></i></div>
+                <h3>Single-Screen Doctor EMR</h3>
+                <p>Fast clinical encounters with vitals recording, auto BMI calculator, 1-click symptom chips, ICD-10 coding, and prescription templates.</p>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-icon-wrap"><i class="bi bi-broadcast"></i></div>
+                <h3>Live OPD Token & TV Chime</h3>
+                <p>Smart queue boards with synthesized audio call chimes, SMS turn alerts, and full-screen waiting room TV display modes.</p>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-icon-wrap"><i class="bi bi-capsule-pill"></i></div>
+                <h3>FEFO Pharmacy & GRN Ledger</h3>
+                <p>Batch-level expiry management, First-Expiry-First-Out dispensing against e-prescriptions, low-stock alerts, and Schedule H compliance.</p>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-icon-wrap"><i class="bi bi-eyedropper"></i></div>
+                <h3>NABL Pathology & Lab Worklist</h3>
+                <p>Sample barcode collection, automated out-of-range critical value flags, and Pathologist maker-checker digital report release.</p>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-icon-wrap"><i class="bi bi-phone-vibrate"></i></div>
+                <h3>Patient Portal & QR Check-in</h3>
+                <p>Self-service patient portal with family account management, online appointment booking wizard, and entrance QR check-in kiosks.</p>
+            </div>
+
+            <div class="feature-box">
+                <div class="feature-icon-wrap"><i class="bi bi-receipt-cutoff"></i></div>
+                <h3>Smart POS Billing & UPI QR</h3>
+                <p>Zero billing leakage. Automatic charge aggregation from consultation, diagnostics and medicines with dynamic instant UPI QR codes.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Editions with Interactive Toggle -->
+    <section class="pricing-section" id="pricing">
+        <div class="section-header">
+            <div class="section-tag">Predictable SaaS Pricing</div>
+            <h2 class="section-title">Scale Gracefully As Your Facility Grows</h2>
+            <p class="section-desc">No expensive upfront server hardware. Upgrade plans without migrating patient databases or losing longitudinal records.</p>
+        </div>
+
+        <!-- Monthly / Annual Toggle -->
+        <div class="billing-toggle-wrap">
+            <div class="billing-toggle-btn" id="billingToggleSwitch">
+                <div class="toggle-option active" id="optMonthly">Monthly Billing</div>
+                <div class="toggle-option" id="optAnnual">Annual Billing</div>
+            </div>
+            <span class="save-badge"><i class="bi bi-stars"></i> Save 20% Annual</span>
+        </div>
+
+        <div class="pricing-grid">
+            <div class="pricing-card">
                 <div>
-                    <div style="font-weight: 700;">Prescription #RX-2026-0914 • Vikramaditya Verma</div>
-                    <div style="font-size: 11.5px; color: var(--text-muted);">Prescribed by: Dr. Rajeshwar Sharma • MRN-90142</div>
+                    <h3 style="font-size: 18px; font-weight: 800;">Starter Clinic</h3>
+                    <p style="font-size: 12px; color: var(--slate-400);">Single Doctor Practice</p>
+                    <div class="price-number" id="priceStarter">â‚¹ 1,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month</span></div>
+                    <div class="feature-check-list">
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> 1 Doctor & 2 Staff</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Patient EMR & Records</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Prescription PDF Printing</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Basic Billing Desk</div>
+                    </div>
                 </div>
-                <span class="badge badge-green">Ready to Dispense</span>
+                <a href="login.html" class="btn btn-outline" style="width: 100%;">Get Started</a>
             </div>
 
-            <div class="table-responsive">
-                <table class="modern-table">
-                    <thead>
-                        <tr>
-                            <th>Medicine</th>
-                            <th>Auto FEFO Batch</th>
-                            <th>Expiry</th>
-                            <th>Prescribed Qty</th>
-                            <th>MRP / Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><b>Tab. Glycomet GP 1/500</b></td>
-                            <td><span class="batch-chip">GLY-26B04</span></td>
-                            <td>02/2028</td>
-                            <td>60 Tabs</td>
-                            <td><b>₹ 690.00</b></td>
-                        </tr>
-                        <tr>
-                            <td><b>Tab. Telma 40</b></td>
-                            <td><span class="batch-chip">TEL-26D12</span></td>
-                            <td>03/2028</td>
-                            <td>30 Tabs</td>
-                            <td><b>₹ 294.00</b></td>
-                        </tr>
-                        <tr>
-                            <td><b>Tab. Rosuvas 10</b></td>
-                            <td><span class="batch-chip">ROS-26C18</span></td>
-                            <td>02/2028</td>
-                            <td>30 Tabs</td>
-                            <td><b>₹ 492.00</b></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 14px; border-top: 2px solid var(--border-subtle);">
+            <div class="pricing-card">
                 <div>
-                    <div style="font-size: 11px; color: var(--text-muted);">Pharmacist on Duty:</div>
-                    <div style="font-weight: 700; font-size: 13px;">Naveen P. (Reg Pharmacist #MH-PH-8891)</div>
+                    <h3 style="font-size: 18px; font-weight: 800;">Clinic Pro</h3>
+                    <p style="font-size: 12px; color: var(--slate-400);">2â€“5 Doctor Polyclinics</p>
+                    <div class="price-number" id="pricePro">â‚¹ 4,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month</span></div>
+                    <div class="feature-check-list">
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Up to 5 Doctors & 10 Staff</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Patient Portal & Dependents</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Public Online Booking Flow</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> WhatsApp Turn Reminders</div>
+                    </div>
                 </div>
-                <div style="text-align: right;">
-                    <div style="font-size: 11px; color: var(--text-muted);">Total Pharmacy Bill:</div>
-                    <div style="font-size: 22px; font-weight: 900; color: var(--primary-600);">₹ 1,476.00</div>
-                </div>
+                <a href="login.html" class="btn btn-outline" style="width: 100%;">Get Started</a>
             </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" data-close-modal>Cancel</button>
-            <button class="btn btn-teal btn-lg" onclick="completePharmacyDispense()">
-                <i class="bi bi-bag-check-fill"></i> Dispense & Deduct Inventory
-            </button>
-        </div>
-    </div>
-</div>
 
-<!-- 2. Lab Result Entry & Pathologist Maker-Checker Verification Modal (LAB-04, LAB-05) -->
-<div class="modal-backdrop" id="labResultEntryModal">
-    <div class="modal-box modal-lg">
-        <div class="modal-header">
-            <h3 class="modal-title"><i class="bi bi-eyedropper" style="color: var(--primary-600);"></i> Pathologist Result Verification (Maker-Checker LAB-05)</h3>
-            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
-        </div>
-        <div class="modal-body">
-            <div style="background: var(--bg-main); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="pricing-card featured">
+                <div class="price-badge">MOST POPULAR</div>
                 <div>
-                    <div style="font-weight: 700;">Order: LAB-ORD-9941 • Vikramaditya Verma (48/M)</div>
-                    <div style="font-size: 11.5px; color: var(--text-muted);">Sample Barcode: <b>SAM-8849102</b> • Tube: <span class="sample-tube-indicator tube-purple"></span>EDTA Whole Blood</div>
+                    <h3 style="font-size: 18px; font-weight: 800; color: #38bdf8;">Polyclinic & Lab Suite</h3>
+                    <p style="font-size: 12px; color: var(--slate-400);">Diagnostics & Multi-Specialty</p>
+                    <div class="price-number" id="priceSuite">â‚¹ 8,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month</span></div>
+                    <div class="feature-check-list">
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Unlimited Doctors & Staff</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Integrated FEFO Pharmacy</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> NABL Pathology Worklist</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Maker-Checker Lab Verification</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Doctor Revenue Share (70/30)</div>
+                    </div>
                 </div>
-                <span class="badge badge-amber">Maker-Checker Verification</span>
+                <a href="dashboard.html" class="btn btn-primary" style="width: 100%;">Launch Suite Demo</a>
             </div>
 
-            <table class="modern-table">
-                <thead>
-                    <tr>
-                        <th>Investigation Parameter</th>
-                        <th>Observed Value</th>
-                        <th>Unit</th>
-                        <th>Biological Reference Interval</th>
-                        <th>Status Flag</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><b>HbA1c (Glycosylated Hemoglobin)</b></td>
-                        <td><input type="text" class="form-control" style="width: 90px; font-weight: 700; color: #e11d48;" value="7.8"></td>
-                        <td>%</td>
-                        <td>4.0 - 5.6 (Normal), >= 6.5 (Diabetes)</td>
-                        <td><span class="result-flag-high">HIGH</span></td>
-                    </tr>
-                    <tr>
-                        <td><b>Estimated Average Glucose (eAG)</b></td>
-                        <td><input type="text" class="form-control" style="width: 90px; font-weight: 700; color: #e11d48;" value="177"></td>
-                        <td>mg/dL</td>
-                        <td>70 - 115</td>
-                        <td><span class="result-flag-high">HIGH</span></td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <div class="form-group" style="margin-top: 16px;">
-                <label class="form-label">Pathologist Clinical Impression & Comments</label>
-                <textarea class="form-control" rows="2">HbA1c levels indicate inadequate glycemic control. Advised diabetic review and lifestyle modifications.</textarea>
+            <div class="pricing-card">
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 800;">Hospital Core (IPD)</h3>
+                    <p style="font-size: 12px; color: var(--slate-400);">Nursing Homes & 50-200 Beds</p>
+                    <div class="price-number" id="priceHospital">â‚¹ 19,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month</span></div>
+                    <div class="feature-check-list">
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Full OPD + IPD Admission</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Live Interactive Bed Map</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Nursing Station & Rounds</div>
+                        <div class="feature-check-item"><i class="bi bi-check-circle-fill"></i> Insurance & TPA Claims Desk</div>
+                    </div>
+                </div>
+                <a href="login.html" class="btn btn-outline" style="width: 100%;">Contact Enterprise</a>
             </div>
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" data-close-modal>Close</button>
-            <button class="btn btn-primary" onclick="verifyAndReleaseLabReport('LAB-ORD-9941')">
-                <i class="bi bi-shield-check"></i> Approve & Release Digital Lab Report
-            </button>
-        </div>
-    </div>
-</div>
+    </section>
 
-<!-- 3. Official NABL Pathology Lab Report Preview (LAB-06) -->
-<div class="modal-backdrop" id="officialLabReportModal">
-    <div class="modal-box modal-lg">
-        <div class="modal-header">
-            <h3 class="modal-title"><i class="bi bi-file-earmark-medical-fill" style="color: var(--primary-600);"></i> NABL Certified Digital Pathology Report (LAB-06)</h3>
-            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
-        </div>
-        <div class="modal-body print-target-area" id="printableLabReportContent">
-            <!-- Populated dynamically via JS -->
-        </div>
-        <div class="modal-footer no-print">
-            <button class="btn btn-outline" data-close-modal>Close</button>
-            <button class="btn btn-primary" data-print-target="printableLabReportContent">
-                <i class="bi bi-printer-fill"></i> Print / Download Lab Report
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Add GRN Purchase Order Modal -->
-<div class="modal-backdrop" id="newGrnModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h3 class="modal-title"><i class="bi bi-truck" style="color: var(--teal-600);"></i> Goods Received Note (GRN Stock Entry)</h3>
-            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label class="form-label">Pharmaceutical Supplier</label>
-                <select class="form-control" id="grnSupplierSelect">
-                    <option>Cipla Healthcare Distribution</option>
-                    <option>Sun Pharma Depot Mumbai</option>
-                    <option>GSK Healthcare Logistics</option>
-                </select>
+    <!-- Footer -->
+    <footer class="landing-footer">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div class="brand-logo-badge" style="width: 30px; height: 30px; font-size: 17px;">
+                <i class="bi bi-hospital-fill"></i>
             </div>
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">Supplier Invoice No</label><input type="text" class="form-control" value="INV/CIP/9941"></div>
-                <div class="form-group"><label class="form-label">Batch Number</label><input type="text" class="form-control" value="DOL-26F01"></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">Quantity Received</label><input type="number" class="form-control" value="500"></div>
-                <div class="form-group"><label class="form-label">Purchase Rate (₹)</label><input type="number" class="form-control" value="1.90"></div>
-            </div>
+            <span>Â© 2026 MediOS Healthcare SaaS. All Rights Reserved.</span>
         </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" data-close-modal>Cancel</button>
-            <button class="btn btn-teal" onclick="submitNewGrn()">
-                <i class="bi bi-check-circle"></i> Verify & Add to Stock Ledger
-            </button>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap;">
+            <span><i class="bi bi-shield-check" style="color: #10b981;"></i> HIPAA & DPDP Compliant</span>
+            <span><i class="bi bi-patch-check-fill" style="color: #0284c7;"></i> NABL & ABDM M1/M2 Certified</span>
+            <a href="login.html" style="color: #38bdf8; font-weight: 700;">Staff Portal Login â†’</a>
         </div>
-    </div>
-</div>
+    </footer>
 
-<!-- Preserved Modals -->
-<div class="tv-waiting-board-overlay" id="tvWaitingBoardOverlay">
-    <div class="tv-header">
-        <div class="tv-title-block">
-            <h1><i class="bi bi-hospital"></i> Apex Healthcare — Live OPD Token Display</h1>
-        </div>
-        <button class="btn btn-danger btn-sm" id="closeTvBoardBtn"><i class="bi bi-x-lg"></i> Exit TV Mode</button>
-    </div>
-    <div class="tv-grid" id="tvBoardGrid"></div>
-</div>
+    <!-- Interactive Simulator Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Interactive OPD Queue Simulation in Hero
+            let tokenNum = 4;
+            const tokenBtn = document.getElementById('heroSimulateTokenBtn');
+            const activeTokenNum = document.getElementById('heroActiveTokenNum');
+            const boardCurrentToken = document.getElementById('heroBoardCurrentToken');
+            const nextQueue1 = document.getElementById('heroNextQueue1');
+            const nextQueue2 = document.getElementById('heroNextQueue2');
+            const heroKpiFootfall = document.getElementById('heroKpiFootfall');
 
-<div class="modal-backdrop" id="qrCheckInModal">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h3 class="modal-title">QR Self Check-in Kiosk</h3>
-            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
-        </div>
-        <div class="modal-body" style="text-align: center;">
-            <div style="width: 140px; height: 140px; margin: 0 auto 12px; background: white; padding: 8px; border-radius: 12px; border: 2px solid var(--border-medium);">
-                <img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=https://apexhealth.medios.live/checkin" alt="QR" style="width: 100%; height: 100%;">
-            </div>
-            <input type="text" id="kioskPatientPhone" class="form-control" value="+91 98700 33211" style="margin-top: 10px;">
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-teal" onclick="submitQrKioskCheckIn()">Simulate Check-in</button>
-        </div>
-    </div>
-</div>
+            function playAudioChime() {
+                try {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (!AudioCtx) return;
+                    const ctx = new AudioCtx();
+                    const notes = [587.33, 880.00, 1174.66];
+                    notes.forEach((freq, idx) => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.18);
+                        gain.gain.setValueAtTime(0, ctx.currentTime + idx * 0.18);
+                        gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + idx * 0.18 + 0.05);
+                        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + idx * 0.18 + 0.8);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start(ctx.currentTime + idx * 0.18);
+                        osc.stop(ctx.currentTime + idx * 0.18 + 0.85);
+                    });
+                } catch(e) {}
+            }
 
-<div class="modal-backdrop" id="newPatientModal">
-    <div class="modal-box modal-lg">
-        <div class="modal-header">
-            <h3 class="modal-title">Fast Patient Registration</h3>
-            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
-        </div>
-        <div class="modal-body">
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="newPatientName" class="form-control" placeholder="Ramesh Chandra"></div>
-                <div class="form-group"><label class="form-label">Mobile</label><input type="text" id="newPatientPhone" class="form-control" placeholder="+91 98200 12345"></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">Age</label><input type="number" id="newPatientAge" class="form-control" value="42"></div>
-                <div class="form-group"><label class="form-label">Gender</label><select id="newPatientGender" class="form-control"><option>Male</option><option>Female</option></select></div>
-                <div class="form-group"><label class="form-label">Blood Group</label><select id="newPatientBlood" class="form-control"><option>B+</option><option>O+</option><option>A+</option></select></div>
-            </div>
-            <div class="form-group"><label class="form-label">Allergies</label><input type="text" id="newPatientAllergies" class="form-control" placeholder="Penicillin, Sulfa"></div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-primary" onclick="submitNewPatient()">Register & Issue Token</button>
-        </div>
-    </div>
-</div>
+            if (tokenBtn) {
+                tokenBtn.addEventListener('click', () => {
+                    tokenNum++;
+                    playAudioChime();
 
-<div class="modal-backdrop" id="bookAppointmentModal">
-    <div class="modal-box">
-        <div class="modal-header"><h3 class="modal-title">Book Doctor Slot</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
-        <div class="modal-body">
-            <div class="form-group"><label class="form-label">Patient</label><select id="aptPatientSelect" class="form-control"><option value="Vikramaditya Verma">Vikramaditya Verma</option></select></div>
-            <div class="form-group"><label class="form-label">Doctor</label><select id="aptDoctorSelect" class="form-control"><option value="Dr. Rajeshwar Sharma">Dr. Rajeshwar Sharma</option></select></div>
-            <div class="form-group"><label class="form-label">Slot</label><select id="aptSlotSelect" class="form-control"><option>10:30 AM - 10:45 AM</option></select></div>
-        </div>
-        <div class="modal-footer"><button class="btn btn-primary" onclick="submitBookAppointment()">Confirm Booking</button></div>
-    </div>
-</div>
+                    activeTokenNum.innerText = `T-0${tokenNum}`;
+                    boardCurrentToken.innerHTML = `T-0${tokenNum}: In Room 2`;
+                    nextQueue1.innerHTML = `<span>Token T-0${tokenNum + 1}: Waiting</span><span style="color: #94a3b8;">1 min</span>`;
+                    nextQueue2.innerHTML = `<span>Token T-0${tokenNum + 2}: Waiting</span><span style="color: #94a3b8;">5 min</span>`;
+                    heroKpiFootfall.innerText = `${48 + tokenNum - 4} Patients`;
 
-<div class="modal-backdrop" id="addMedicineModal">
-    <div class="modal-box">
-        <div class="modal-header"><h3 class="modal-title">Add Medication</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
-        <div class="modal-body">
-            <div class="form-group"><label class="form-label">Medicine</label><select id="medCatalogSelect" class="form-control"></select></div>
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">Dose</label><input type="text" id="medDoseInput" class="form-control" value="1 Tab"></div>
-                <div class="form-group"><label class="form-label">Freq</label><select id="medFreqSelect" class="form-control"><option value="1-0-1">1-0-1</option><option value="1-0-0">1-0-0</option></select></div>
-            </div>
-        </div>
-        <div class="modal-footer"><button class="btn btn-primary" onclick="submitAddMedicine()">Add to Rx</button></div>
-    </div>
-</div>
+                    tokenBtn.innerHTML = `<i class="bi bi-check2-circle"></i> Token T-0${tokenNum} Called!`;
+                    setTimeout(() => {
+                        tokenBtn.innerHTML = `<i class="bi bi-volume-up-fill"></i> Call Next Token (Chime)`;
+                    }, 1400);
+                });
+            }
 
-<div class="modal-backdrop" id="prescriptionPreviewModal">
-    <div class="modal-box modal-lg">
-        <div class="modal-header">
-            <h3 class="modal-title">Digitally Signed Prescription Preview (RX-04)</h3>
-            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
-        </div>
-        <div class="modal-body print-target-area" id="printableRxContent"></div>
-        <div class="modal-footer no-print">
-            <button class="btn btn-outline" data-close-modal>Close</button>
-            <button class="btn btn-primary" data-print-target="printableRxContent"><i class="bi bi-printer-fill"></i> Print / Download PDF</button>
-        </div>
-    </div>
-</div>
+            // 2. Monthly / Annual Billing Toggle Switch
+            const optMonthly = document.getElementById('optMonthly');
+            const optAnnual = document.getElementById('optAnnual');
+            const pStarter = document.getElementById('priceStarter');
+            const pPro = document.getElementById('pricePro');
+            const pSuite = document.getElementById('priceSuite');
+            const pHospital = document.getElementById('priceHospital');
 
-<div class="modal-backdrop" id="invoiceReceiptModal">
-    <div class="modal-box modal-lg">
-        <div class="modal-header"><h3 class="modal-title">Official Hospital Tax Invoice</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
-        <div class="modal-body print-target-area" id="printableInvoiceContent"></div>
-        <div class="modal-footer no-print"><button class="btn btn-primary" data-print-target="printableInvoiceContent"><i class="bi bi-printer-fill"></i> Print Invoice</button></div>
-    </div>
-</div>
+            function setBilling(annual) {
+                if (annual) {
+                    optAnnual.classList.add('active');
+                    optMonthly.classList.remove('active');
+                    pStarter.innerHTML = `â‚¹ 1,599 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month (billed yearly)</span>`;
+                    pPro.innerHTML = `â‚¹ 3,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month (billed yearly)</span>`;
+                    pSuite.innerHTML = `â‚¹ 7,199 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month (billed yearly)</span>`;
+                    pHospital.innerHTML = `â‚¹ 15,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month (billed yearly)</span>`;
+                } else {
+                    optMonthly.classList.add('active');
+                    optAnnual.classList.remove('active');
+                    pStarter.innerHTML = `â‚¹ 1,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month</span>`;
+                    pPro.innerHTML = `â‚¹ 4,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month</span>`;
+                    pSuite.innerHTML = `â‚¹ 8,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month</span>`;
+                    pHospital.innerHTML = `â‚¹ 19,999 <span style="font-size: 12px; font-weight: 500; color: var(--slate-400);">/ month</span>`;
+                }
+            }
 
-<div class="modal-backdrop" id="doctorLeaveModal">
-    <div class="modal-box">
-        <div class="modal-header"><h3 class="modal-title">Record Doctor Leave</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
-        <div class="modal-body">
-            <div class="form-group"><label class="form-label">Doctor</label><select id="leaveDoctorSelect" class="form-control"><option>Dr. Rajeshwar Sharma</option></select></div>
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">From</label><input type="date" id="leaveFromDate" class="form-control" value="2026-10-15"></div>
-                <div class="form-group"><label class="form-label">To</label><input type="date" id="leaveToDate" class="form-control" value="2026-10-17"></div>
-            </div>
-        </div>
-        <div class="modal-footer"><button class="btn btn-primary" onclick="submitDoctorLeave()">Block Slots</button></div>
-    </div>
-</div>
-
-<div class="modal-backdrop" id="feedbackSubmissionModal">
-    <div class="modal-box">
-        <div class="modal-header"><h3 class="modal-title">Patient Feedback & NPS</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
-        <div class="modal-body">
-            <div class="form-group"><label class="form-label">Rating</label><select id="fbRatingScore" class="form-control"><option value="5">⭐⭐⭐⭐⭐ 5 Stars</option></select></div>
-            <div class="form-group"><label class="form-label">NPS Score (0-10)</label><select id="fbNpsScore" class="form-control"><option value="10">10 / 10</option></select></div>
-            <div class="form-group"><label class="form-label">Comment</label><textarea id="fbComments" class="form-control" rows="2"></textarea></div>
-        </div>
-        <div class="modal-footer"><button class="btn btn-primary" onclick="submitPatientFeedback()">Submit Feedback</button></div>
-    </div>
-</div>
-
-<div class="modal-backdrop" id="patient360Modal">
-    <div class="modal-box modal-lg">
-        <div class="modal-header"><h3 class="modal-title">Longitudinal Patient 360° Record</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
-        <div class="modal-body" id="patient360Body"></div>
-    </div>
-</div>
-
-<div class="modal-backdrop" id="roleSwitcherModal">
-    <div class="modal-box">
-        <div class="modal-header"><h3 class="modal-title">Switch Role & Workspace Mode (RBAC)</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
-        <div class="modal-body">
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Doctor')"><b><i class="bi bi-stethoscope"></i> Doctor Mode</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Pharmacist')"><b><i class="bi bi-capsule"></i> Chief Pharmacist</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Pathologist')"><b><i class="bi bi-eyedropper"></i> Consultant Pathologist (Lab Director)</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Receptionist')"><b><i class="bi bi-person-lines-fill"></i> Receptionist Desk</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Billing Executive')"><b><i class="bi bi-cash-coin"></i> Billing & Cashier Desk</b></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="toast-container" id="toastContainer"></div>
-
-<!-- Core Scripts -->
-<script src="js/data.js"></script>
-<script src="js/app.js"></script>
-
+            if (optMonthly && optAnnual) {
+                optMonthly.addEventListener('click', () => setBilling(false));
+                optAnnual.addEventListener('click', () => setBilling(true));
+            }
+        });
+    </script>
 </body>
 </html>
+

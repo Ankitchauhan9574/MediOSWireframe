@@ -315,6 +315,9 @@ document.addEventListener('DOMContentLoaded', () => {
             circle.style.top = `${e.clientY - rect.top - size / 2}px`;
             btn.appendChild(circle);
             setTimeout(() => circle.remove(), 600);
+        });
+    }
+
     // --------------------------------------------------------------------------
     // 5. Rich Toast Notification Engine with Auto-Dismiss Bar & Sound
     // --------------------------------------------------------------------------
