@@ -1916,6 +1916,317 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
     pointer-events: none;
 }
 
+/* ==========================================================================
+   PHASE 4: HOSPITAL / IPD, BED MAP & NURSING STATION STYLING
+   ========================================================================== */
+
+.bed-map-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.bed-map-filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pill-group {
+    display: flex;
+    gap: 6px;
+    background: var(--bg-main);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+}
+
+.pill-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-snappy);
+}
+
+.pill-btn:hover {
+    color: var(--text-primary);
+    background: rgba(14, 165, 233, 0.08);
+}
+
+.pill-btn.active {
+    background: var(--primary-600);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.35);
+}
+
+.bed-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.legend-dot.status-occupied { background: #ef4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); }
+.legend-dot.status-vacant { background: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
+.legend-dot.status-cleaning { background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
+.legend-dot.status-blocked { background: #64748b; }
+
+/* Ward Section Block */
+.ward-section-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
+}
+
+.ward-header-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.ward-title-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ward-title-area h4 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--text-heading);
+}
+
+.ward-badge-pill {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
+    background: rgba(14, 165, 233, 0.1);
+    color: var(--primary-600);
+}
+
+.ward-bed-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+/* Individual Bed Card */
+.bed-card {
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 180px;
+    position: relative;
+    transition: all var(--transition-smooth);
+}
+
+.bed-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.bed-card.status-occupied {
+    border-color: rgba(239, 68, 68, 0.35);
+    background: linear-gradient(180deg, rgba(239, 68, 68, 0.04) 0%, var(--bg-main) 100%);
+}
+
+.bed-card.status-vacant {
+    border-color: rgba(16, 185, 129, 0.35);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.04) 0%, var(--bg-main) 100%);
+}
+
+.bed-card.status-cleaning {
+    border-color: rgba(245, 158, 11, 0.35);
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.04) 0%, var(--bg-main) 100%);
+}
+
+.bed-card.status-blocked {
+    border-color: rgba(100, 116, 139, 0.35);
+    background: rgba(100, 116, 139, 0.05);
+    opacity: 0.8;
+}
+
+.bed-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.bed-no-badge {
+    font-size: 13px;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-heading);
+}
+
+.bed-patient-body {
+    flex: 1;
+    margin-bottom: 12px;
+}
+
+.bed-patient-name {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.bed-patient-meta {
+    font-size: 11.5px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+.bed-amenity-tags {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.bed-amenity-tag {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.bed-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-subtle);
+}
+
+/* MAR Sheet & Nursing Items */
+.mar-schedule-card {
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.mar-schedule-card.given {
+    border-left: 4px solid var(--emerald-500);
+}
+
+.mar-schedule-card.due {
+    border-left: 4px solid var(--amber-500);
+    background: rgba(245, 158, 11, 0.03);
+}
+
+.inpatient-selector-item {
+    padding: 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-main);
+    cursor: pointer;
+    transition: all var(--transition-snappy);
+}
+
+.inpatient-selector-item:hover {
+    border-color: var(--primary-500);
+    background: rgba(14, 165, 233, 0.05);
+}
+
+.inpatient-selector-item.active {
+    border-color: var(--primary-600);
+    background: rgba(14, 165, 233, 0.1);
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.2);
+}
+
+/* Discharge Summary Print Sheet */
+.discharge-sheet-container {
+    background: #ffffff;
+    color: #1e293b;
+    padding: 30px;
+    border-radius: var(--radius-md);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.discharge-header-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #0f172a;
+    margin-bottom: 18px;
+}
+
+.discharge-grid-meta {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    background: #f8fafc;
+    padding: 14px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 18px;
+    font-size: 12px;
+}
+
+.discharge-section-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: #0284c7;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1931,3 +2242,4 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
     .header-search { display: none; }
     .kpi-grid { grid-template-columns: 1fr; }
 }
+

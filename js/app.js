@@ -60,6 +60,15 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPharmacyBatches();
         renderLabWorklist();
         renderDoctorPayouts();
+        renderIpdBedMap();
+        renderIpdAdmissionsTable();
+        renderNursingStation();
+        renderDoctorRounds();
+        renderDischargeDesk();
+        renderOtManagement();
+        renderTpaClaimsDesk();
+        renderHospitalProcurement();
+        renderMultiBranchHub();
         renderDoctorLeaves();
         renderWaitlist();
         renderFeedbackTable();
@@ -103,6 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
             'pharmacy': { title: 'Pharmacy Inventory & FEFO Batch Ledger', section: 'Pharmacy Suite (Phase 3)' },
             'lab': { title: 'Pathology & Diagnostic Lab Worklist', section: 'Laboratory Suite (Phase 3)' },
             'payouts': { title: 'Doctor Revenue Share & Payout Statements', section: 'Doctor Operations (OPS-01)' },
+            'ipd-bed-map': { title: 'Interactive Ward & Bed Occupancy Map', section: 'Hospital Core (Phase 4)' },
+            'ipd-admissions': { title: 'In-Patient (IPD) Admissions Directory', section: 'Hospital Core (Phase 4)' },
+            'ipd-nursing': { title: 'Nursing Station & Medication Administration Record (MAR)', section: 'Hospital Core (Phase 4)' },
+            'ipd-rounds': { title: 'IPD Consultant Doctor Daily Rounds', section: 'Hospital Core (Phase 4)' },
+            'ipd-discharge': { title: 'Discharge Planning & Final Folio Settlement', section: 'Hospital Core (Phase 4)' },
+            'ot-management': { title: 'Operation Theatre (OT) & Procedure Suite', section: 'Enterprise Operations (Phase 5)' },
+            'tpa-desk': { title: 'Insurance & TPA Claims Pre-Authorization Desk', section: 'Enterprise Operations (Phase 5)' },
+            'procurement': { title: 'Hospital Procurement, PO & Central Stores', section: 'Enterprise Operations (Phase 5)' },
+            'multi-branch': { title: 'Multi-Branch Group Operations & HQ Analytics', section: 'Enterprise Group (Phase 5)' },
             'portal': { title: 'Patient Self-Service Portal & Dependents', section: 'Patient Experience (PEX-03)' },
             'online-booking': { title: 'Public Online Appointment Booking Flow', section: 'Patient Onboarding (PEX-01)' },
             'analytics': { title: 'Clinic Revenue, No-Show & NPS Analytics', section: 'Executive Intelligence' },
@@ -736,6 +754,2021 @@ document.addEventListener('DOMContentLoaded', () => {
 
         showToast('Clinical Safety Override Recorded in Compliance Audit Trail.');
     };
+
+    // ==========================================================================
+    // PHASE 4: HOSPITAL / IPD, WARD & BED MAP, MAR & DISCHARGE LOGIC (M13 - M15)
+    // ==========================================================================
+
+    let activeNursingIpdNo = "IPD-2026-0089";
+    let activeDoctorRoundIpdNo = "IPD-2026-0089";
+    let activeDischargeIpdNo = "IPD-2026-0083";
+    let currentBedMapWardFilter = "all";
+
+    // 1. Interactive Ward & Bed Matrix (IPD-02, M15)
+    function renderIpdBedMap(wardFilter = currentBedMapWardFilter) {
+        currentBedMapWardFilter = wardFilter;
+        const container = document.getElementById('interactiveBedMatrixContainer');
+        if (!container) return;
+
+        // Recalculate Occupancy KPIs
+        const total = MediData.beds.length;
+        const occupied = MediData.beds.filter(b => b.status === 'Occupied').length;
+        const vacant = MediData.beds.filter(b => b.status === 'Vacant').length;
+        const cleaning = MediData.beds.filter(b => b.status === 'Cleaning').length;
+        const blocked = MediData.beds.filter(b => b.status === 'Blocked').length;
+        const rate = Math.round((occupied / (total - blocked)) * 100);
+
+        const totalElem = document.getElementById('kpiTotalBeds');
+        const occElem = document.getElementById('kpiOccupiedBeds');
+        const vacElem = document.getElementById('kpiVacantBeds');
+        const cleanElem = document.getElementById('kpiCleaningBeds');
+        const rateElem = document.getElementById('kpiOccupancyRate');
+
+        if (totalElem) totalElem.innerText = total;
+        if (occElem) occElem.innerText = occupied;
+        if (vacElem) vacElem.innerText = vacant;
+        if (cleanElem) cleanElem.innerText = cleaning;
+        if (rateElem) rateElem.innerText = `${rate}%`;
+
+        // Filter Wards
+        const wardsToRender = wardFilter === 'all' 
+            ? MediData.wards 
+            : MediData.wards.filter(w => w.id === wardFilter);
+
+        container.innerHTML = wardsToRender.map(ward => {
+            const wardBeds = MediData.beds.filter(b => b.wardId === ward.id);
+            const wardOccupied = wardBeds.filter(b => b.status === 'Occupied').length;
+
+            return `
+                <div class="ward-section-card">
+                    <div class="ward-header-banner">
+                        <div class="ward-title-area">
+                            <i class="bi bi-hospital" style="color: var(--primary-600); font-size: 18px;"></i>
+                            <h4>${ward.name}</h4>
+                            <span class="ward-badge-pill">${ward.floor}</span>
+                            <span class="badge badge-outline">Daily Tariff: ₹${ward.dailyRate.toLocaleString('en-IN')}</span>
+                            ${ward.ventilatorSupport ? '<span class="badge badge-purple"><i class="bi bi-cpu"></i> Ventilator Ready</span>' : ''}
+                        </div>
+                        <div style="font-size: 12px; font-weight: 700;">
+                            Occupancy: <span style="color: ${wardOccupied === wardBeds.length ? 'var(--rose-500)' : 'var(--emerald-600)'};">${wardOccupied} / ${wardBeds.length} Beds</span> (${Math.round((wardOccupied/wardBeds.length)*100)}%)
+                        </div>
+                    </div>
+
+                    <div class="ward-bed-grid">
+                        ${wardBeds.map(bed => renderSingleBedCard(bed)).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderSingleBedCard(bed) {
+        let statusBadge = '';
+        let cardClass = `bed-card status-${bed.status.toLowerCase()}`;
+        let actionFooter = '';
+
+        if (bed.status === 'Occupied') {
+            statusBadge = '<span class="badge badge-rose" style="font-size: 10px;"><i class="bi bi-person-fill-lock"></i> Occupied</span>';
+            actionFooter = `
+                <div style="display: flex; gap: 6px; width: 100%;">
+                    <button class="btn btn-outline btn-xs" style="flex: 1;" onclick="viewInpatientNursing('${bed.ipdNo}')" title="Open Nursing Station & MAR">
+                        <i class="bi bi-bandaid-fill"></i> MAR
+                    </button>
+                    <button class="btn btn-outline btn-xs" style="flex: 1;" onclick="openTransferBedModal('${bed.id}', '${bed.ipdNo}')" title="Transfer Bed">
+                        <i class="bi bi-arrow-left-right"></i> Transfer
+                    </button>
+                    <button class="btn btn-primary btn-xs" onclick="viewInpatientDischarge('${bed.ipdNo}')" title="Discharge Planning">
+                        <i class="bi bi-box-arrow-right"></i> Bill
+                    </button>
+                </div>
+            `;
+        } else if (bed.status === 'Vacant') {
+            statusBadge = '<span class="badge badge-emerald" style="font-size: 10px;"><i class="bi bi-check-circle-fill"></i> Vacant</span>';
+            actionFooter = `
+                <button class="btn btn-emerald btn-xs" style="width: 100%;" onclick="openAdmitPatientModal('${bed.id}')">
+                    <i class="bi bi-plus-circle"></i> Admit Inpatient Here
+                </button>
+            `;
+        } else if (bed.status === 'Cleaning') {
+            statusBadge = '<span class="badge badge-amber" style="font-size: 10px;"><i class="bi bi-stars"></i> Sanitizing</span>';
+            actionFooter = `
+                <button class="btn btn-outline btn-xs" style="width: 100%; color: var(--amber-600); border-color: rgba(245, 158, 11, 0.4);" onclick="markBedSanitized('${bed.id}')">
+                    <i class="bi bi-check2-all"></i> Mark Sanitized & Ready
+                </button>
+            `;
+        } else {
+            statusBadge = '<span class="badge badge-slate" style="font-size: 10px;">Maintenance</span>';
+            actionFooter = `
+                <button class="btn btn-outline btn-xs" style="width: 100%;" onclick="toggleBedBlockedState('${bed.id}')">
+                    <i class="bi bi-unlock"></i> Unblock Bed
+                </button>
+            `;
+        }
+
+        return `
+            <div class="${cardClass}">
+                <div class="bed-card-header">
+                    <span class="bed-no-badge"><i class="bi bi-hdd-rack"></i> ${bed.bedNo}</span>
+                    ${statusBadge}
+                </div>
+
+                <div class="bed-patient-body">
+                    ${bed.status === 'Occupied' ? `
+                        <div class="bed-patient-name">${bed.patientName}</div>
+                        <div class="bed-patient-meta">
+                            <div><i class="bi bi-file-medical"></i> IPD: <b>${bed.ipdNo}</b></div>
+                            <div><i class="bi bi-person-badge"></i> ${bed.doctor}</div>
+                            <div><i class="bi bi-calendar3"></i> Admitted: ${bed.admissionDate}</div>
+                        </div>
+                    ` : bed.status === 'Vacant' ? `
+                        <div style="color: var(--emerald-600); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                            <i class="bi bi-sparkles"></i> Cleaned & Sanitized
+                        </div>
+                        <div class="bed-patient-meta" style="margin-top: 4px;">Ready for immediate patient allocation.</div>
+                    ` : bed.status === 'Cleaning' ? `
+                        <div style="color: var(--amber-600); font-size: 13px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                            <i class="bi bi-droplet-half"></i> Terminal Disinfection
+                        </div>
+                        <div class="bed-patient-meta" style="margin-top: 4px;">Housekeeping in progress post-discharge.</div>
+                    ` : `
+                        <div style="color: var(--text-muted); font-size: 13px; font-weight: 700;">Under Maintenance</div>
+                        <div class="bed-patient-meta" style="margin-top: 4px;">Biomedical calibration scheduled.</div>
+                    `}
+
+                    <div class="bed-amenity-tags">
+                        ${bed.oxygen ? '<span class="bed-amenity-tag" style="color: var(--primary-600);"><i class="bi bi-wind"></i> O2 Central</span>' : ''}
+                        ${bed.pulseOximeter ? '<span class="bed-amenity-tag" style="color: var(--rose-500);"><i class="bi bi-activity"></i> Monitor</span>' : ''}
+                        ${bed.ivPump ? '<span class="bed-amenity-tag" style="color: var(--indigo-600);"><i class="bi bi-droplet"></i> IV Pump</span>' : ''}
+                    </div>
+                </div>
+
+                <div class="bed-card-footer">
+                    ${actionFooter}
+                </div>
+            </div>
+        `;
+    }
+
+    window.filterBedMapWard = function(wardId) {
+        currentBedMapWardFilter = wardId;
+        const pills = document.querySelectorAll('#wardFilterPills .pill-btn');
+        pills.forEach(p => {
+            if (p.dataset.ward === wardId) p.classList.add('active');
+            else p.classList.remove('active');
+        });
+        renderIpdBedMap(wardId);
+    };
+
+    window.markBedSanitized = function(bedId) {
+        const bed = MediData.beds.find(b => b.id === bedId);
+        if (bed) {
+            bed.status = 'Vacant';
+            playAudioFx('chime');
+            showToast(`Bed ${bed.bedNo} marked sanitized and ready for admission!`, 'success', 'Housekeeping Desk');
+            renderIpdBedMap();
+        }
+    };
+
+    window.toggleBedBlockedState = function(bedId) {
+        const bed = MediData.beds.find(b => b.id === bedId);
+        if (bed) {
+            bed.status = bed.status === 'Blocked' ? 'Vacant' : 'Blocked';
+            playAudioFx('click');
+            showToast(`Bed ${bed.bedNo} status updated to: ${bed.status}`, 'info', 'Bed Manager');
+            renderIpdBedMap();
+        }
+    };
+
+    // 2. In-Patient Admissions Register (IPD-01)
+    function renderIpdAdmissionsTable(filterText = '', statusFilter = 'all') {
+        const tbody = document.getElementById('ipdAdmissionsTableBody');
+        if (!tbody) return;
+
+        let filtered = MediData.ipdAdmissions;
+        if (statusFilter !== 'all') {
+            filtered = filtered.filter(a => a.status === statusFilter);
+        }
+        if (filterText) {
+            filtered = filtered.filter(a => {
+                const searchStr = `${a.ipdNo} ${a.patientName} ${a.consultantDoctor} ${a.wardName} ${a.bedNo} ${a.diagnosisICD}`.toLowerCase();
+                return searchStr.includes(filterText.toLowerCase());
+            });
+        }
+
+        const sidebarCount = document.getElementById('sidebarIpdAdmissionsCount');
+        if (sidebarCount) sidebarCount.innerText = `${MediData.ipdAdmissions.filter(a => a.status === 'Admitted').length} Admitted`;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-muted);">No matching IPD admission records found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(adm => {
+            const isDue = adm.runningCharges.netBalance > 0;
+            const balanceLabel = isDue 
+                ? `<span style="color: var(--rose-500); font-weight: 800;">₹${adm.runningCharges.netBalance.toLocaleString('en-IN')} Due</span>`
+                : `<span style="color: var(--emerald-600); font-weight: 800;">Surplus ₹${Math.abs(adm.runningCharges.netBalance).toLocaleString('en-IN')}</span>`;
+
+            return `
+                <tr>
+                    <td>
+                        <div style="font-weight: 800; color: var(--primary-600); font-family: 'JetBrains Mono', monospace;">${adm.ipdNo}</div>
+                        <div style="font-weight: 700; color: var(--text-primary); font-size: 13px;">${adm.patientName} (${adm.age}y, ${adm.gender})</div>
+                        <div style="font-size: 11px; color: var(--text-muted);"><i class="bi bi-droplet-fill text-danger"></i> ${adm.bloodGroup} • MRN: ${adm.mrn}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 800; color: var(--text-heading);"><i class="bi bi-hdd-rack"></i> ${adm.bedNo}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">${adm.wardName}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">${adm.consultantDoctor}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">${adm.department}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); max-width: 220px;">${adm.admissionReason}</div>
+                        <div style="font-size: 10.5px; color: var(--primary-600); font-family: 'JetBrains Mono', monospace;">${adm.diagnosisICD}</div>
+                    </td>
+                    <td>
+                        <span class="badge ${adm.payerType.includes('PM-JAY') ? 'badge-purple' : adm.payerType.includes('Insurance') ? 'badge-emerald' : 'badge-outline'}" style="font-size: 11px;">
+                            ${adm.payerType.split('(')[0]}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700;">${adm.admitDays} Days</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">${adm.admitDateTime.split(',')[0]}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 12px;">Bill: <b>₹${adm.runningCharges.totalEstimated.toLocaleString('en-IN')}</b></div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Deposit: ₹${adm.advanceDeposit.toLocaleString('en-IN')}</div>
+                        <div>${balanceLabel}</div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-outline btn-xs" onclick="viewInpatientNursing('${adm.ipdNo}')" title="Nursing Station & MAR">
+                                <i class="bi bi-bandaid"></i> MAR
+                            </button>
+                            <button class="btn btn-outline btn-xs" onclick="viewInpatientRounds('${adm.ipdNo}')" title="Doctor Daily Rounds">
+                                <i class="bi bi-journal-medical"></i> Round
+                            </button>
+                            <button class="btn btn-primary btn-xs" onclick="viewInpatientDischarge('${adm.ipdNo}')" title="Discharge & Final Bill">
+                                <i class="bi bi-box-arrow-right"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.filterIpdAdmissionsTable = function() {
+        const input = document.getElementById('ipdAdmissionsSearchInput');
+        const filterText = input ? input.value : '';
+        renderIpdAdmissionsTable(filterText);
+    };
+
+    window.filterIpdStatus = function(status) {
+        const pills = document.querySelectorAll('#ipdStatusFilterPills .pill-btn');
+        pills.forEach(p => {
+            if ((status === 'all' && p.innerText.includes('All')) || p.innerText.includes(status)) {
+                p.classList.add('active');
+            } else {
+                p.classList.remove('active');
+            }
+        });
+        renderIpdAdmissionsTable('', status);
+    };
+
+    // 3. Nursing Station & Electronic Medication Administration Record (MAR) (M14)
+    function renderNursingStation(selectedIpdNo = activeNursingIpdNo) {
+        activeNursingIpdNo = selectedIpdNo;
+        const listContainer = document.getElementById('nursingInpatientSelectorList');
+        const cardContainer = document.getElementById('nursingActivePatientCard');
+        if (!listContainer || !cardContainer) return;
+
+        const admissions = MediData.ipdAdmissions;
+        const currentPatient = admissions.find(a => a.ipdNo === selectedIpdNo) || admissions[0];
+        if (!currentPatient) return;
+
+        // Render Inpatient Selection Sidebar
+        listContainer.innerHTML = admissions.map(adm => {
+            const isActive = adm.ipdNo === currentPatient.ipdNo;
+            return `
+                <div class="inpatient-selector-item ${isActive ? 'active' : ''}" onclick="renderNursingStation('${adm.ipdNo}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="font-weight: 800; font-size: 13px; color: var(--text-heading);">${adm.patientName}</span>
+                        <span class="badge ${isActive ? 'badge-emerald' : 'badge-outline'}" style="font-size: 10px;">${adm.bedNo}</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted);">${adm.wardName} • ${adm.ipdNo}</div>
+                </div>
+            `;
+        }).join('');
+
+        // Render Active Inpatient MAR & Care Card
+        cardContainer.innerHTML = `
+            <!-- Patient Header & Vitals Bar -->
+            <div style="padding: 16px; border-bottom: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h3 style="margin: 0; font-size: 18px; font-weight: 800;">${currentPatient.patientName}</h3>
+                        <span class="badge badge-purple">${currentPatient.age} Yrs / ${currentPatient.gender}</span>
+                        <span class="badge badge-rose"><i class="bi bi-droplet-fill"></i> ${currentPatient.bloodGroup}</span>
+                        <span class="badge badge-emerald"><i class="bi bi-hdd-rack"></i> Bed: ${currentPatient.bedNo} (${currentPatient.wardName})</span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                        <b>IPD No:</b> ${currentPatient.ipdNo} | <b>Consultant:</b> ${currentPatient.consultantDoctor} | <b>Admit Date:</b> ${currentPatient.admitDateTime}
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-outline btn-sm" onclick="openRecordNursingVitalsModal('${currentPatient.ipdNo}')">
+                        <i class="bi bi-heart-pulse-fill text-danger"></i> + Record Vitals
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="openTransferBedModal('${currentPatient.wardId}', '${currentPatient.ipdNo}')">
+                        <i class="bi bi-arrow-left-right"></i> Transfer Bed
+                    </button>
+                </div>
+            </div>
+
+            <!-- Clinical Alerts Ribbon -->
+            <div style="padding: 12px 16px; background: rgba(244, 63, 94, 0.06); border-bottom: 1px solid rgba(244, 63, 94, 0.15); display: flex; justify-content: space-between; align-items: center;">
+                <div style="font-size: 12.5px; color: var(--rose-600); font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                    <i class="bi bi-exclamation-octagon-fill"></i> Allergy Warning: ${currentPatient.allergies}
+                </div>
+                <div style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">
+                    <i class="bi bi-egg-fried"></i> Diet: <b>${currentPatient.diet}</b>
+                </div>
+            </div>
+
+            <!-- Electronic MAR (Medication Administration Record) -->
+            <div style="padding: 18px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+                    <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text-heading); display: flex; align-items: center; gap: 8px;">
+                        <i class="bi bi-capsule-pill" style="color: var(--primary-600);"></i> Scheduled Medication Administration Record (MAR)
+                    </h4>
+                    <span class="badge badge-outline"><i class="bi bi-clock-history"></i> Today's Schedule</span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    ${currentPatient.medicationSchedule.map(med => {
+                        const isGiven = med.status === 'Given';
+                        return `
+                            <div class="mar-schedule-card ${isGiven ? 'given' : 'due'}">
+                                <div>
+                                    <div style="font-weight: 800; font-size: 14px; color: var(--text-primary);">${med.medicine}</div>
+                                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                                        Dose: <b>${med.dose}</b> • Route: <b>${med.route}</b> • Timing: <b>${med.timing}</b>
+                                    </div>
+                                    ${isGiven ? `
+                                        <div style="font-size: 11px; color: var(--emerald-600); margin-top: 4px; font-weight: 600;">
+                                            <i class="bi bi-check-circle-fill"></i> Administered at ${med.administeredAt} by ${med.administeredBy}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                <div>
+                                    ${isGiven ? `
+                                        <span class="badge badge-emerald" style="padding: 6px 12px;"><i class="bi bi-check2"></i> Dose Given</span>
+                                    ` : `
+                                        <button class="btn btn-emerald btn-sm" onclick="administerMedicationDose('${currentPatient.ipdNo}', '${med.id}')">
+                                            <i class="bi bi-check2-circle"></i> Administer Now
+                                        </button>
+                                    `}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+
+                <!-- Nursing Vitals Flowsheet -->
+                <div style="margin-top: 24px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h4 style="margin: 0; font-size: 15px; font-weight: 800; color: var(--text-heading); display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-activity" style="color: var(--rose-500);"></i> Shift Vitals Flowsheet
+                        </h4>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>BP (mmHg)</th>
+                                    <th>Pulse (bpm)</th>
+                                    <th>Temp (°F)</th>
+                                    <th>SpO2</th>
+                                    <th>CBG Sugar</th>
+                                    <th>Pain Score</th>
+                                    <th>Recorded By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${currentPatient.vitalsChart.map(v => `
+                                    <tr>
+                                        <td><b>${v.time}</b></td>
+                                        <td><span class="badge badge-outline">${v.bp}</span></td>
+                                        <td><b>${v.pulse}</b></td>
+                                        <td>${v.temp}</td>
+                                        <td><span class="badge badge-emerald">${v.spo2}</span></td>
+                                        <td><b>${v.sugar}</b></td>
+                                        <td>${v.pain}</td>
+                                        <td><span style="font-size: 11px; color: var(--text-muted);">${v.nurse}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    window.viewInpatientNursing = function(ipdNo) {
+        switchView('ipd-nursing');
+        renderNursingStation(ipdNo);
+    };
+
+    window.administerMedicationDose = function(ipdNo, medScheduleId) {
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo);
+        if (!admission) return;
+
+        const med = admission.medicationSchedule.find(m => m.id === medScheduleId);
+        if (med) {
+            med.status = 'Given';
+            med.administeredAt = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            med.administeredBy = 'Staff Nurse Sarita';
+
+            playAudioFx('chime');
+            triggerConfetti();
+
+            MediData.auditLogs.unshift({
+                id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+                time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                actor: 'Staff Nurse Sarita (NUR-01)',
+                action: 'MAR_MEDICATION_ADMINISTERED',
+                entity: `MAR #${med.id}`,
+                tenant: MediData.tenant.id,
+                details: `Administered ${med.medicine} (${med.dose}) to ${admission.patientName} (${admission.ipdNo}). Signed electronically.`,
+                ip: '192.168.1.122'
+            });
+            renderAuditLogs();
+
+            showToast(`Administered ${med.medicine} to ${admission.patientName}`, 'success', 'Electronic MAR');
+            renderNursingStation(ipdNo);
+        }
+    };
+
+    window.openRecordNursingVitalsModal = function(ipdNo = activeNursingIpdNo) {
+        const select = document.getElementById('nurseVitalIpdSelect');
+        if (select) {
+            select.innerHTML = MediData.ipdAdmissions.map(a => `<option value="${a.ipdNo}" ${a.ipdNo === ipdNo ? 'selected' : ''}>${a.patientName} (${a.bedNo} - ${a.ipdNo})</option>`).join('');
+        }
+        document.getElementById('recordNursingVitalsModal').classList.add('active');
+    };
+
+    window.submitNursingVitals = function() {
+        const ipdNo = document.getElementById('nurseVitalIpdSelect').value;
+        const bp = document.getElementById('nurseVitalBp').value;
+        const pulse = parseInt(document.getElementById('nurseVitalPulse').value) || 76;
+        const temp = document.getElementById('nurseVitalTemp').value;
+        const spo2 = document.getElementById('nurseVitalSpo2').value;
+        const sugar = document.getElementById('nurseVitalSugar').value;
+        const pain = document.getElementById('nurseVitalPain').value;
+
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo);
+        if (admission) {
+            const timeStr = `Today, ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+            admission.vitalsChart.unshift({
+                time: timeStr,
+                bp, pulse, temp, spo2, sugar, pain,
+                nurse: 'Staff Nurse Sarita'
+            });
+
+            playAudioFx('success');
+            document.getElementById('recordNursingVitalsModal').classList.remove('active');
+            showToast(`Vitals recorded for ${admission.patientName}`, 'success', 'Nursing Flowsheet');
+            renderNursingStation(ipdNo);
+        }
+    };
+
+    // 4. IPD Doctor Daily Clinical Rounds (IPD-03)
+    function renderDoctorRounds(selectedIpdNo = activeDoctorRoundIpdNo) {
+        activeDoctorRoundIpdNo = selectedIpdNo;
+        const listContainer = document.getElementById('doctorRoundsInpatientList');
+        const detailContainer = document.getElementById('doctorRoundsDetailContainer');
+        if (!listContainer || !detailContainer) return;
+
+        const admissions = MediData.ipdAdmissions;
+        const currentPatient = admissions.find(a => a.ipdNo === selectedIpdNo) || admissions[0];
+        if (!currentPatient) return;
+
+        listContainer.innerHTML = admissions.map(adm => {
+            const isActive = adm.ipdNo === currentPatient.ipdNo;
+            return `
+                <div class="inpatient-selector-item ${isActive ? 'active' : ''}" onclick="renderDoctorRounds('${adm.ipdNo}')">
+                    <div style="font-weight: 800; font-size: 13px;">${adm.patientName}</div>
+                    <div style="font-size: 11px; color: var(--text-muted);">${adm.wardName} • Bed: ${adm.bedNo}</div>
+                    <div style="font-size: 11px; color: var(--primary-600); margin-top: 3px;">${adm.consultantDoctor}</div>
+                </div>
+            `;
+        }).join('');
+
+        detailContainer.innerHTML = `
+            <div style="padding: 16px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                    <div>
+                        <h3 style="margin: 0; font-size: 17px; font-weight: 800;">${currentPatient.patientName} <span style="font-size: 13px; font-weight: 500; color: var(--text-muted);">(Bed ${currentPatient.bedNo})</span></h3>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                            Diagnosis: <b>${currentPatient.diagnosisICD}</b> • Day ${currentPatient.admitDays} of Admission
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="openDoctorRoundModal('${currentPatient.ipdNo}')">
+                        <i class="bi bi-pencil-square"></i> + Add Today's Round Note
+                    </button>
+                </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                ${currentPatient.doctorRoundsNotes.map((round, idx) => `
+                    <div class="card" style="padding: 16px; border-left: 4px solid var(--primary-600);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <div style="font-weight: 800; font-size: 13.5px; color: var(--text-heading);">
+                                <i class="bi bi-person-badge-fill" style="color: var(--primary-600);"></i> ${round.doctor}
+                            </div>
+                            <span class="badge badge-outline"><i class="bi bi-calendar3"></i> ${round.date}</span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-primary); line-height: 1.5; margin-bottom: 10px;">
+                            <b>Clinical Assessment (SOAP):</b> ${round.notes}
+                        </div>
+                        <div style="padding: 10px; background: rgba(14, 165, 233, 0.05); border-radius: 6px; border: 1px dashed rgba(14, 165, 233, 0.3); font-size: 12px; color: var(--primary-700);">
+                            <i class="bi bi-check2-circle"></i> <b>Doctor Orders & Instructions:</b> ${round.orders}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    window.viewInpatientRounds = function(ipdNo) {
+        switchView('ipd-rounds');
+        renderDoctorRounds(ipdNo);
+    };
+
+    window.openDoctorRoundModal = function(ipdNo = activeDoctorRoundIpdNo) {
+        const patSelect = document.getElementById('roundIpdPatientSelect');
+        const docSelect = document.getElementById('roundDoctorSelect');
+        if (patSelect) {
+            patSelect.innerHTML = MediData.ipdAdmissions.map(a => `<option value="${a.ipdNo}" ${a.ipdNo === ipdNo ? 'selected' : ''}>${a.patientName} (${a.bedNo})</option>`).join('');
+        }
+        if (docSelect) {
+            docSelect.innerHTML = MediData.doctors.map(d => `<option value="${d.name}">${d.name} (${d.specialty})</option>`).join('');
+        }
+        document.getElementById('recordDoctorRoundModal').classList.add('active');
+    };
+
+    window.submitDoctorRoundNote = function() {
+        const ipdNo = document.getElementById('roundIpdPatientSelect').value;
+        const doctor = document.getElementById('roundDoctorSelect').value;
+        const notes = document.getElementById('roundClinicalNotesInput').value || 'Patient reviewed during morning rounds. Vitals stable.';
+        const orders = document.getElementById('roundOrdersInput').value || 'Continue current line of treatment.';
+
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo);
+        if (admission) {
+            const timeStr = `Today, ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+            admission.doctorRoundsNotes.unshift({
+                date: timeStr,
+                doctor: doctor,
+                notes: notes,
+                orders: orders
+            });
+
+            // Automatically accumulate Doctor Consultation Charge (IPD-04)
+            admission.runningCharges.doctorConsultationCharges += admission.doctorVisitDailyTariff;
+            admission.runningCharges.subtotal += admission.doctorVisitDailyTariff;
+            admission.runningCharges.totalEstimated += admission.doctorVisitDailyTariff;
+            admission.runningCharges.netBalance += admission.doctorVisitDailyTariff;
+
+            playAudioFx('success');
+            document.getElementById('recordDoctorRoundModal').classList.remove('active');
+            showToast(`Doctor Round recorded & ₹${admission.doctorVisitDailyTariff} visit fee added to folio.`, 'success', 'Clinical Rounds');
+            renderDoctorRounds(ipdNo);
+        }
+    };
+
+    // 5. Discharge Planning & Final IPD Bill Settlement (IPD-06, FIN-04)
+    function renderDischargeDesk(selectedIpdNo = activeDischargeIpdNo) {
+        activeDischargeIpdNo = selectedIpdNo;
+        const listContainer = document.getElementById('dischargeInpatientList');
+        const workspaceContainer = document.getElementById('dischargeDetailWorkspace');
+        if (!listContainer || !workspaceContainer) return;
+
+        const admissions = MediData.ipdAdmissions;
+        const currentPatient = admissions.find(a => a.ipdNo === selectedIpdNo) || admissions[0];
+        if (!currentPatient) return;
+
+        listContainer.innerHTML = admissions.map(adm => {
+            const isActive = adm.ipdNo === currentPatient.ipdNo;
+            const isReady = adm.status === 'Planned Discharge';
+            return `
+                <div class="inpatient-selector-item ${isActive ? 'active' : ''}" onclick="renderDischargeDesk('${adm.ipdNo}')">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-weight: 800; font-size: 13px;">${adm.patientName}</span>
+                        ${isReady ? '<span class="badge badge-emerald" style="font-size: 9px;">Ready</span>' : '<span class="badge badge-outline" style="font-size: 9px;">Inpatient</span>'}
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted);">${adm.wardName} • Bed: ${adm.bedNo}</div>
+                </div>
+            `;
+        }).join('');
+
+        const charges = currentPatient.runningCharges;
+        const isRefund = charges.netBalance < 0;
+
+        workspaceContainer.innerHTML = `
+            <div style="padding: 18px; border-radius: var(--radius-md); background: var(--bg-main); border: 1px solid var(--border-subtle); margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h3 style="margin: 0; font-size: 18px; font-weight: 800;">${currentPatient.patientName}</h3>
+                            <span class="badge badge-purple">${currentPatient.ipdNo}</span>
+                            <span class="badge badge-emerald">Bed: ${currentPatient.bedNo}</span>
+                        </div>
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+                            Consultant: <b>${currentPatient.consultantDoctor}</b> • Stay: <b>${currentPatient.admitDays} Days</b> (${currentPatient.admitDateTime.split(',')[0]} to Today)
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn btn-outline btn-sm" onclick="openPrintableDischargeSummary('${currentPatient.ipdNo}')">
+                            <i class="bi bi-file-earmark-medical"></i> Discharge Summary PDF
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="openPrintableIpdBill('${currentPatient.ipdNo}')">
+                            <i class="bi bi-printer-fill"></i> IPD Tax Invoice
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Itemized Final Folio Charges Breakdown -->
+            <div class="card" style="margin-bottom: 20px;">
+                <h4 style="font-size: 14px; font-weight: 800; margin-bottom: 12px; color: var(--text-heading);">
+                    <i class="bi bi-calculator" style="color: var(--primary-600);"></i> Itemized IPD Folio Charges Accumulator
+                </h4>
+
+                <div class="table-responsive">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th>Charge Head / Department</th>
+                                <th>Billing Rate & Units</th>
+                                <th>Total Amount (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Room & Bed Charges</b> (${currentPatient.wardName})</td>
+                                <td>₹${currentPatient.bedDailyTariff} / day × ${currentPatient.admitDays} days</td>
+                                <td><b>₹${charges.roomCharges.toLocaleString('en-IN')}</b></td>
+                            </tr>
+                            <tr>
+                                <td><b>Nursing & Ward Care Charges</b></td>
+                                <td>₹${currentPatient.nursingTariff} / day × ${currentPatient.admitDays} days</td>
+                                <td><b>₹${charges.nursingCharges.toLocaleString('en-IN')}</b></td>
+                            </tr>
+                            <tr>
+                                <td><b>Doctor Inpatient Daily Visit Fees</b></td>
+                                <td>Specialist Clinical Rounds × ${currentPatient.admitDays} rounds</td>
+                                <td><b>₹${charges.doctorConsultationCharges.toLocaleString('en-IN')}</b></td>
+                            </tr>
+                            <tr>
+                                <td><b>Pharmacy & Consumables Ledger</b></td>
+                                <td>IV fluids, Injections, Cannulas, Disposables</td>
+                                <td><b>₹${charges.pharmacyCharges.toLocaleString('en-IN')}</b></td>
+                            </tr>
+                            <tr>
+                                <td><b>Pathology Lab & Investigations</b></td>
+                                <td>Diagnostic blood/urine investigations</td>
+                                <td><b>₹${charges.labCharges.toLocaleString('en-IN')}</b></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                    <div style="min-width: 300px; background: var(--bg-main); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px;">
+                            <span>Gross Bill Total:</span>
+                            <b>₹${charges.totalEstimated.toLocaleString('en-IN')}</b>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 13px; color: var(--emerald-600);">
+                            <span>Initial Advance Deposit:</span>
+                            <b>- ₹${charges.advancePaid.toLocaleString('en-IN')}</b>
+                        </div>
+                        <div style="border-top: 1px solid var(--border-subtle); padding-top: 8px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 800;">
+                            <span>${isRefund ? 'Refund to Patient:' : 'Net Payable at Counter:'}</span>
+                            <span style="color: ${isRefund ? 'var(--emerald-600)' : 'var(--rose-600)'};">
+                                ₹${Math.abs(charges.netBalance).toLocaleString('en-IN')}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settlement & Bed Release Action -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: rgba(16, 185, 129, 0.08); border-radius: var(--radius-md); border: 1px solid rgba(16, 185, 129, 0.2);">
+                <div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--emerald-700);">Complete Hospital Discharge & Clear Bed</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">Reconciles accounts, frees bed for terminal disinfection and generates discharge certificate.</div>
+                </div>
+                <button class="btn btn-emerald" onclick="finalizeIpdDischarge('${currentPatient.ipdNo}')">
+                    <i class="bi bi-check2-circle"></i> Finalize Settlement & Discharge
+                </button>
+            </div>
+        `;
+    }
+
+    window.viewInpatientDischarge = function(ipdNo) {
+        switchView('ipd-discharge');
+        renderDischargeDesk(ipdNo);
+    };
+
+    window.finalizeIpdDischarge = function(ipdNo) {
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo);
+        if (!admission) return;
+
+        // Update Bed State to Cleaning
+        const bed = MediData.beds.find(b => b.id === admission.wardId || b.bedNo === admission.bedNo);
+        if (bed) {
+            bed.status = 'Cleaning';
+            bed.patientId = null;
+            bed.patientName = null;
+            bed.ipdNo = null;
+        }
+
+        admission.status = 'Discharged';
+        playAudioFx('success');
+        triggerConfetti();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: 'Kiran R. (Billing & IPD Desk)',
+            action: 'IPD_PATIENT_DISCHARGE_SETTLED',
+            entity: `Admission #${admission.ipdNo}`,
+            tenant: MediData.tenant.id,
+            details: `Settled final bill ₹${admission.runningCharges.totalEstimated} for ${admission.patientName}. Bed ${admission.bedNo} routed to Housekeeping.`,
+            ip: '192.168.1.110'
+        });
+        renderAuditLogs();
+
+        showToast(`Patient ${admission.patientName} discharged successfully! Bed marked for sanitization.`, 'success', 'Discharge Clearance');
+        renderIpdBedMap();
+        renderIpdAdmissionsTable();
+        renderDischargeDesk();
+    };
+
+    // Admission Form Handlers (IPD-01)
+    window.openAdmitPatientModal = function(presetBedId = null) {
+        const patSelect = document.getElementById('admitPatientSelect');
+        const docSelect = document.getElementById('admitDoctorSelect');
+        const wardSelect = document.getElementById('admitWardSelect');
+
+        if (patSelect) {
+            patSelect.innerHTML = MediData.patients.map(p => `<option value="${p.id}">${p.name} (${p.mrn} • ${p.phone})</option>`).join('');
+        }
+        if (docSelect) {
+            docSelect.innerHTML = MediData.doctors.map(d => `<option value="${d.name}">${d.name} (${d.specialty})</option>`).join('');
+        }
+        if (wardSelect) {
+            wardSelect.innerHTML = MediData.wards.map(w => `<option value="${w.id}">${w.name} (₹${w.dailyRate}/day)</option>`).join('');
+        }
+
+        updateAdmitBedDropdown(presetBedId);
+        document.getElementById('admitPatientModal').classList.add('active');
+    };
+
+    window.updateAdmitBedDropdown = function(presetBedId = null) {
+        const wardId = document.getElementById('admitWardSelect').value;
+        const bedSelect = document.getElementById('admitBedSelect');
+        if (!bedSelect) return;
+
+        const vacantBeds = MediData.beds.filter(b => b.wardId === wardId && (b.status === 'Vacant' || b.id === presetBedId));
+        if (vacantBeds.length === 0) {
+            bedSelect.innerHTML = `<option value="">No vacant beds available in this ward</option>`;
+        } else {
+            bedSelect.innerHTML = vacantBeds.map(b => `<option value="${b.id}" ${b.id === presetBedId ? 'selected' : ''}>${b.bedNo} (${b.type})</option>`).join('');
+        }
+    };
+
+    window.submitAdmitPatient = function() {
+        const patientId = document.getElementById('admitPatientSelect').value;
+        const patient = MediData.patients.find(p => p.id === patientId) || MediData.patients[0];
+        const doctor = document.getElementById('admitDoctorSelect').value;
+        const wardId = document.getElementById('admitWardSelect').value;
+        const ward = MediData.wards.find(w => w.id === wardId);
+        const bedId = document.getElementById('admitBedSelect').value;
+        const bed = MediData.beds.find(b => b.id === bedId);
+        const payer = document.getElementById('admitPayerTypeSelect').value;
+        const reason = document.getElementById('admitReasonInput').value || 'Acute clinical admission';
+        const icd = document.getElementById('admitIcdInput').value || 'R69 (Illness unspecified)';
+        const deposit = parseInt(document.getElementById('admitAdvanceDepositInput').value) || 15000;
+        const diet = document.getElementById('admitDietSelect').value;
+
+        if (!bed) {
+            showToast('Please select an available bed for admission', 'error');
+            return;
+        }
+
+        const newIpdNo = `IPD-2026-00${Math.floor(90 + Math.random() * 10)}`;
+
+        // Update Bed Object
+        bed.status = 'Occupied';
+        bed.patientId = patient.id;
+        bed.patientName = patient.name;
+        bed.ipdNo = newIpdNo;
+        bed.admissionDate = 'Today';
+        bed.doctor = doctor;
+
+        // Create Admission Record
+        const newAdmission = {
+            ipdNo: newIpdNo,
+            patientId: patient.id,
+            patientName: patient.name,
+            age: patient.age || 45,
+            gender: patient.gender || 'Male',
+            bloodGroup: patient.bloodGroup || 'B+',
+            contact: patient.phone,
+            mrn: patient.mrn,
+            admitDateTime: `Today, ${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`,
+            admitDays: 1,
+            consultantDoctor: doctor,
+            department: "Internal Medicine",
+            admissionReason: reason,
+            diagnosisICD: icd,
+            wardId: ward.id,
+            wardName: ward.name,
+            bedNo: bed.bedNo,
+            bedDailyTariff: ward.dailyRate,
+            nursingTariff: 1000,
+            doctorVisitDailyTariff: 1200,
+            payerType: payer,
+            advanceDeposit: deposit,
+            status: "Admitted",
+            allergies: patient.allergies || "No known drug allergies",
+            diet: diet,
+            vitalsChart: [
+                { time: "On Admission", bp: "124/82", pulse: 78, temp: "98.6°F", spo2: "99%", sugar: "120 mg/dL", pain: "0/10", nurse: "Staff Nurse Sarita" }
+            ],
+            medicationSchedule: [
+                { id: `MED-ADM-${Math.floor(10 + Math.random()*90)}`, medicine: "IV Fluid Normal Saline 500ml", dose: "75 ml/hr", timing: "Continuous Infusion", route: "Intravenous", status: "Due", administeredAt: null, administeredBy: null }
+            ],
+            doctorRoundsNotes: [
+                { date: "On Admission", doctor: doctor, notes: `Patient admitted with ${reason}. Initial workup ordered.`, orders: "Monitor vitals 4-hourly, standard nursing protocol." }
+            ],
+            runningCharges: {
+                roomCharges: ward.dailyRate,
+                nursingCharges: 1000,
+                doctorConsultationCharges: 1200,
+                pharmacyCharges: 1500,
+                labCharges: 800,
+                subtotal: ward.dailyRate + 4500,
+                taxGst: 0,
+                totalEstimated: ward.dailyRate + 4500,
+                advancePaid: deposit,
+                netBalance: (ward.dailyRate + 4500) - deposit
+            },
+            dischargeSummary: {
+                dischargeDate: "Pending",
+                conditionOnDischarge: "Under Treatment",
+                summaryNotes: "Under active in-patient care.",
+                dischargeMeds: [],
+                followUpAdvice: "Pending discharge",
+                emergencyWarning: "Report immediately if any acute distress."
+            }
+        };
+
+        MediData.ipdAdmissions.unshift(newAdmission);
+
+        playAudioFx('chime');
+        triggerConfetti();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: `${MediData.currentUser.name}`,
+            action: 'IPD_PATIENT_ADMISSION',
+            entity: `Admission #${newIpdNo}`,
+            tenant: MediData.tenant.id,
+            details: `Admitted ${patient.name} to ${ward.name} Bed ${bed.bedNo}. Initial advance deposit ₹${deposit.toLocaleString('en-IN')} received.`,
+            ip: '192.168.1.104'
+        });
+        renderAuditLogs();
+
+        document.getElementById('admitPatientModal').classList.remove('active');
+        showToast(`Patient ${patient.name} admitted to Bed ${bed.bedNo}!`, 'success', 'Inpatient Admission');
+        renderIpdBedMap();
+        renderIpdAdmissionsTable();
+    };
+
+    // Bed Transfer Handlers (IPD-05)
+    window.openTransferBedModal = function(sourceBedId, ipdNo) {
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo);
+        if (!admission) return;
+
+        document.getElementById('transferSourceBedId').value = sourceBedId;
+        document.getElementById('transferIpdNo').value = ipdNo;
+        document.getElementById('transferPatientNameLabel').innerText = `Transferring Patient: ${admission.patientName} (${admission.ipdNo})`;
+        document.getElementById('transferCurrentBedLabel').innerText = `Current Bed: ${admission.bedNo} (${admission.wardName})`;
+
+        const wardSelect = document.getElementById('transferTargetWardSelect');
+        if (wardSelect) {
+            wardSelect.innerHTML = MediData.wards.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+        }
+        updateTransferBedDropdown();
+        document.getElementById('transferBedModal').classList.add('active');
+    };
+
+    window.updateTransferBedDropdown = function() {
+        const wardId = document.getElementById('transferTargetWardSelect').value;
+        const bedSelect = document.getElementById('transferTargetBedSelect');
+        if (!bedSelect) return;
+
+        const vacantBeds = MediData.beds.filter(b => b.wardId === wardId && b.status === 'Vacant');
+        if (vacantBeds.length === 0) {
+            bedSelect.innerHTML = `<option value="">No vacant beds in this ward</option>`;
+        } else {
+            bedSelect.innerHTML = vacantBeds.map(b => `<option value="${b.id}">${b.bedNo} (${b.type})</option>`).join('');
+        }
+    };
+
+    window.submitBedTransfer = function() {
+        const ipdNo = document.getElementById('transferIpdNo').value;
+        const targetBedId = document.getElementById('transferTargetBedSelect').value;
+        const reason = document.getElementById('transferReasonSelect').value;
+
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo);
+        const targetBed = MediData.beds.find(b => b.id === targetBedId);
+        const sourceBed = MediData.beds.find(b => b.bedNo === admission.bedNo);
+
+        if (!targetBed) {
+            showToast('Please select a valid vacant bed', 'error');
+            return;
+        }
+
+        const oldBedNo = admission.bedNo;
+
+        // Free old bed -> send to Cleaning
+        if (sourceBed) {
+            sourceBed.status = 'Cleaning';
+            sourceBed.patientId = null;
+            sourceBed.patientName = null;
+            sourceBed.ipdNo = null;
+        }
+
+        // Occupy target bed
+        targetBed.status = 'Occupied';
+        targetBed.patientId = admission.patientId;
+        targetBed.patientName = admission.patientName;
+        targetBed.ipdNo = admission.ipdNo;
+        targetBed.doctor = admission.consultantDoctor;
+
+        // Update admission record
+        admission.wardId = targetBed.wardId;
+        admission.wardName = targetBed.wardName;
+        admission.bedNo = targetBed.bedNo;
+
+        playAudioFx('chime');
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: 'Staff Nurse Sarita (Ward In-charge)',
+            action: 'IPD_BED_TRANSFER',
+            entity: `Admission #${admission.ipdNo}`,
+            tenant: MediData.tenant.id,
+            details: `Transferred ${admission.patientName} from ${oldBedNo} to ${targetBed.bedNo}. Reason: ${reason}. Old bed sent for terminal cleaning.`,
+            ip: '192.168.1.122'
+        });
+        renderAuditLogs();
+
+        document.getElementById('transferBedModal').classList.remove('active');
+        showToast(`Patient transferred from ${oldBedNo} to ${targetBed.bedNo}`, 'success', 'Bed Transfer');
+        renderIpdBedMap();
+        renderIpdAdmissionsTable();
+    };
+
+    // Printable Document Generators
+    window.openPrintableDischargeSummary = function(ipdNo = activeDischargeIpdNo) {
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo);
+        if (!admission) return;
+
+        const summary = admission.dischargeSummary;
+        const container = document.getElementById('printableDischargeContent');
+
+        container.innerHTML = `
+            <div class="discharge-sheet-container">
+                <div class="discharge-header-box">
+                    <div>
+                        <h2 style="margin: 0; color: #0284c7; font-size: 20px; font-weight: 800;">${MediData.tenant.name}</h2>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${MediData.tenant.address} • Ph: ${MediData.tenant.phone}</div>
+                        <div style="font-size: 11px; color: #64748b;">Reg No: ${MediData.tenant.regNo} | Drug Lic: ${MediData.tenant.dlNo}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; font-weight: 800; color: #0f172a; text-transform: uppercase;">Official Discharge Summary</div>
+                        <div style="font-size: 11px; font-weight: 700; color: #0284c7; font-family: 'JetBrains Mono', monospace;">${admission.ipdNo}</div>
+                    </div>
+                </div>
+
+                <div class="discharge-grid-meta">
+                    <div><b>Patient Name:</b> ${admission.patientName}</div>
+                    <div><b>Age / Gender:</b> ${admission.age} Yrs / ${admission.gender} (Blood: ${admission.bloodGroup})</div>
+                    <div><b>MRN / UHID:</b> ${admission.mrn}</div>
+                    <div><b>Contact No:</b> ${admission.contact}</div>
+                    <div><b>Admission Date & Time:</b> ${admission.admitDateTime}</div>
+                    <div><b>Discharge Date:</b> ${summary.dischargeDate}</div>
+                    <div><b>Ward & Bed No:</b> ${admission.wardName} (Bed: ${admission.bedNo})</div>
+                    <div><b>Consultant In-Charge:</b> ${admission.consultantDoctor}</div>
+                </div>
+
+                <div class="discharge-section-title">Final Clinical Diagnosis (ICD-10)</div>
+                <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+                    ${admission.diagnosisICD}
+                </div>
+
+                <div class="discharge-section-title">Reason for Admission & Clinical Presentation</div>
+                <div style="font-size: 12.5px; color: #334155; line-height: 1.5; margin-bottom: 8px;">
+                    ${admission.admissionReason}
+                </div>
+
+                <div class="discharge-section-title">Hospital Course & Treatment Summary</div>
+                <div style="font-size: 12.5px; color: #334155; line-height: 1.5; margin-bottom: 8px;">
+                    ${summary.summaryNotes}
+                </div>
+
+                <div class="discharge-section-title">Condition at Discharge</div>
+                <div style="font-size: 12.5px; font-weight: 700; color: #10b981; margin-bottom: 8px;">
+                    <i class="bi bi-check-circle-fill"></i> ${summary.conditionOnDischarge}
+                </div>
+
+                <div class="discharge-section-title">Discharge Medication Regimen</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 12px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; text-align: left;">
+                            <th style="padding: 6px; border: 1px solid #cbd5e1;">Medicine Name</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1;">Dosage</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1;">Frequency</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1;">Timing</th>
+                            <th style="padding: 6px; border: 1px solid #cbd5e1;">Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${summary.dischargeMeds.map(m => `
+                            <tr>
+                                <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: 700;">${m.drug}</td>
+                                <td style="padding: 6px; border: 1px solid #cbd5e1;">${m.dose}</td>
+                                <td style="padding: 6px; border: 1px solid #cbd5e1;">${m.freq}</td>
+                                <td style="padding: 6px; border: 1px solid #cbd5e1;">${m.timing}</td>
+                                <td style="padding: 6px; border: 1px solid #cbd5e1; font-weight: 700;">${m.days}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div class="discharge-section-title">Follow-up Advice & Instructions</div>
+                <div style="font-size: 12.5px; color: #334155; line-height: 1.5; margin-bottom: 8px;">
+                    ${summary.followUpAdvice}
+                </div>
+
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; padding: 10px; border-radius: 6px; margin-top: 10px;">
+                    <div style="font-size: 12px; font-weight: 800; color: #e11d48;"><i class="bi bi-shield-exclamation"></i> Emergency Warning Signs:</div>
+                    <div style="font-size: 11.5px; color: #9f1239;">${summary.emergencyWarning}</div>
+                </div>
+
+                <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; padding-top: 14px;">
+                    <div style="text-align: center;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=https://apexhealth.medios.live/verify/ipd/${admission.ipdNo}" alt="QR" style="border: 1px solid #cbd5e1; border-radius: 4px;">
+                        <div style="font-size: 9px; color: #64748b; margin-top: 2px;">Scan to Verify Summary</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 800; color: #0f172a; font-size: 13px;">${admission.consultantDoctor}</div>
+                        <div style="font-size: 11px; color: #64748b;">${admission.department}</div>
+                        <div style="font-size: 10px; color: #0284c7; font-weight: 700; margin-top: 4px;">[ Digitally Authorized & Signed ]</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('printableDischargeSummaryModal').classList.add('active');
+    };
+
+    window.openPrintableIpdBill = function(ipdNo = activeDischargeIpdNo) {
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo);
+        if (!admission) return;
+
+        const charges = admission.runningCharges;
+        const container = document.getElementById('printableIpdBillContent');
+
+        container.innerHTML = `
+            <div class="discharge-sheet-container">
+                <div class="discharge-header-box">
+                    <div>
+                        <h2 style="margin: 0; color: #0284c7; font-size: 20px; font-weight: 800;">${MediData.tenant.name}</h2>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${MediData.tenant.address} • GSTIN: ${MediData.tenant.gstin}</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; font-weight: 800; color: #0f172a;">FINAL HOSPITAL TAX INVOICE</div>
+                        <div style="font-size: 11px; font-weight: 700; color: #0284c7;">Bill No: INV-IPD-${admission.ipdNo.replace('IPD-', '')}</div>
+                    </div>
+                </div>
+
+                <div class="discharge-grid-meta">
+                    <div><b>Patient:</b> ${admission.patientName} (${admission.gender}, ${admission.age}y)</div>
+                    <div><b>IPD Number:</b> ${admission.ipdNo}</div>
+                    <div><b>Admitted Date:</b> ${admission.admitDateTime}</div>
+                    <div><b>Discharge Date:</b> Today</div>
+                    <div><b>Room / Ward:</b> ${admission.wardName} (${admission.bedNo})</div>
+                    <div><b>Payer / Scheme:</b> ${admission.payerType}</div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 16px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; text-align: left;">
+                            <th style="padding: 8px; border: 1px solid #cbd5e1;">Service / Item Particulars</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1;">Rate (₹)</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1;">Qty / Days</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Room & Bed Rent (${admission.wardName})</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${admission.bedDailyTariff}</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">${admission.admitDays} Days</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 700;">₹${charges.roomCharges.toLocaleString('en-IN')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Nursing Care & Monitoring</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${admission.nursingTariff}</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">${admission.admitDays} Days</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 700;">₹${charges.nursingCharges.toLocaleString('en-IN')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Doctor Daily Clinical Visits</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">₹${admission.doctorVisitDailyTariff}</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">${admission.admitDays} Rounds</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 700;">₹${charges.doctorConsultationCharges.toLocaleString('en-IN')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Pharmacy Medicines & Surgical Consumables</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">-</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Ledger Total</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 700;">₹${charges.pharmacyCharges.toLocaleString('en-IN')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Laboratory Investigations & Diagnostic Tests</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">-</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Ledger Total</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 700;">₹${charges.labCharges.toLocaleString('en-IN')}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div style="display: flex; justify-content: flex-end;">
+                    <div style="width: 280px; font-size: 13px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                            <span>Subtotal:</span>
+                            <b>₹${charges.totalEstimated.toLocaleString('en-IN')}</b>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #10b981;">
+                            <span>Less: Advance Paid:</span>
+                            <b>- ₹${charges.advancePaid.toLocaleString('en-IN')}</b>
+                        </div>
+                        <div style="border-top: 2px solid #0f172a; padding-top: 6px; display: flex; justify-content: space-between; font-size: 15px; font-weight: 800;">
+                            <span>${charges.netBalance < 0 ? 'Refundable:' : 'Net Payable:'}</span>
+                            <span style="color: ${charges.netBalance < 0 ? '#10b981' : '#e11d48'};">₹${Math.abs(charges.netBalance).toLocaleString('en-IN')}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 24px; padding: 10px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 6px; font-size: 11px; color: #64748b;">
+                    * Healthcare clinical services are exempt from GST under Notification No. 12/2017-Central Tax (Rate).
+                    This is an electronically generated official Hospital Tax Clearance Slip.
+                </div>
+            </div>
+        `;
+
+        document.getElementById('printableIpdBillModal').classList.add('active');
+    };
+
+    // ==========================================================================
+    // PHASE 5: ENTERPRISE OPERATIONS — OT, TPA CLAIMS & PROCUREMENT LOGIC (M16 - M18)
+    // ==========================================================================
+
+    let currentTpaPayerFilter = "all";
+
+    // 1. OT / Surgery Suite & WHO Safety Checklist (M16)
+    function renderOtManagement() {
+        const otGrid = document.getElementById('otTheatresStatusGrid');
+        const surgTbody = document.getElementById('otSurgeriesTableBody');
+        if (!otGrid || !surgTbody) return;
+
+        // Render OT Theatres Matrix
+        otGrid.innerHTML = MediData.otTheatres.map(ot => {
+            let statusBadge = '';
+            let borderStyle = '';
+            if (ot.status === 'In Surgery') {
+                statusBadge = '<span class="badge badge-rose pulse-red"><i class="bi bi-circle-fill" style="font-size: 8px;"></i> In Surgery</span>';
+                borderStyle = 'border-color: rgba(244, 63, 94, 0.4); background: linear-gradient(180deg, rgba(244, 63, 94, 0.05), var(--bg-surface));';
+            } else if (ot.status === 'Ready / Scheduled') {
+                statusBadge = '<span class="badge badge-indigo"><i class="bi bi-clock-fill"></i> Scheduled</span>';
+                borderStyle = 'border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(180deg, rgba(99, 102, 241, 0.05), var(--bg-surface));';
+            } else if (ot.status === 'Sanitizing') {
+                statusBadge = '<span class="badge badge-amber"><i class="bi bi-stars"></i> Sanitizing</span>';
+                borderStyle = 'border-color: rgba(245, 158, 11, 0.4);';
+            } else {
+                statusBadge = '<span class="badge badge-emerald"><i class="bi bi-check-circle-fill"></i> Available</span>';
+                borderStyle = 'border-color: rgba(16, 185, 129, 0.4);';
+            }
+
+            return `
+                <div class="card" style="padding: 16px; ${borderStyle}">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                        <div>
+                            <div style="font-weight: 800; font-size: 14.5px; color: var(--text-heading);">${ot.name}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">${ot.type} • ${ot.floor}</div>
+                        </div>
+                        ${statusBadge}
+                    </div>
+                    ${ot.currentSurgery ? `
+                        <div style="background: var(--bg-main); padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-top: 6px;">
+                            <div style="font-weight: 700; font-size: 12.5px; color: var(--primary-600);"><i class="bi bi-activity"></i> ${ot.currentSurgery}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Chief Surgeon: <b>${ot.surgeon}</b></div>
+                        </div>
+                    ` : `
+                        <div style="font-size: 12px; color: var(--text-muted); margin-top: 14px;">No active procedure. Cleaned & ready for emergency or planned intake.</div>
+                    `}
+                </div>
+            `;
+        }).join('');
+
+        // Render Scheduled Surgeries Worklist
+        surgTbody.innerHTML = MediData.otSurgeries.map(surg => {
+            const who = surg.whoChecklist;
+            const signInDone = who.signIn?.completed;
+            const timeOutDone = who.timeOut?.completed;
+            const signOutDone = who.signOut?.completed;
+
+            return `
+                <tr>
+                    <td>
+                        <div style="font-weight: 800; color: var(--primary-600); font-family: 'JetBrains Mono', monospace;">${surg.id}</div>
+                        <div style="font-size: 11.5px; font-weight: 700; color: var(--text-heading);"><i class="bi bi-hospital"></i> ${surg.otName}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">${surg.patientName}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">IPD: ${surg.ipdNo} • Bed: ${surg.bedNo}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; font-size: 13px; color: var(--text-heading);">${surg.procedureName}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Indication: ${surg.indication}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 12px;">Surgeon: <b>${surg.chiefSurgeon}</b></div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Anesth: ${surg.anesthetist} • Scrub: ${surg.scrubNurse}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; font-size: 12px;">${surg.timeSlot}</div>
+                        <div style="font-size: 10.5px; color: var(--primary-600);">${surg.anesthesiaType}</div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 4px; align-items: center;">
+                            <span class="badge ${signInDone ? 'badge-emerald' : 'badge-outline'}" style="font-size: 9.5px;" title="Sign-In (Before Anesthesia)">
+                                <i class="bi ${signInDone ? 'bi-check-lg' : 'bi-dash'}"></i> Sign-In
+                            </span>
+                            <span class="badge ${timeOutDone ? 'badge-emerald' : 'badge-outline'}" style="font-size: 9.5px;" title="Time-Out (Before Incision)">
+                                <i class="bi ${timeOutDone ? 'bi-check-lg' : 'bi-dash'}"></i> Time-Out
+                            </span>
+                            <span class="badge ${signOutDone ? 'badge-emerald' : 'badge-outline'}" style="font-size: 9.5px;" title="Sign-Out (Before Leaving OT)">
+                                <i class="bi ${signOutDone ? 'bi-check-lg' : 'bi-dash'}"></i> Sign-Out
+                            </span>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 800; font-size: 13px;">₹${surg.packageAmount.toLocaleString('en-IN')}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Consumables: ₹${surg.consumablesTotal.toLocaleString('en-IN')}</div>
+                    </td>
+                    <td>
+                        <button class="btn btn-outline btn-xs" onclick="openWhoChecklistModal('${surg.id}')" title="Open Surgical Safety Checklist">
+                            <i class="bi bi-shield-check"></i> Checklist
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.openBookSurgeryModal = function() {
+        const patSelect = document.getElementById('surgPatientSelect');
+        const otSelect = document.getElementById('surgOtSelect');
+        const surgeonSelect = document.getElementById('surgChiefSurgeonSelect');
+
+        if (patSelect) {
+            patSelect.innerHTML = MediData.ipdAdmissions.map(a => `<option value="${a.ipdNo}">${a.patientName} (${a.bedNo} • ${a.ipdNo})</option>`).join('');
+        }
+        if (otSelect) {
+            otSelect.innerHTML = MediData.otTheatres.map(o => `<option value="${o.id}">${o.name} (${o.status})</option>`).join('');
+        }
+        if (surgeonSelect) {
+            surgeonSelect.innerHTML = MediData.doctors.map(d => `<option value="${d.name}">${d.name} (${d.specialty})</option>`).join('');
+        }
+
+        document.getElementById('bookSurgeryModal').classList.add('active');
+    };
+
+    window.submitBookSurgery = function() {
+        const ipdNo = document.getElementById('surgPatientSelect').value;
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo) || MediData.ipdAdmissions[0];
+        const otId = document.getElementById('surgOtSelect').value;
+        const ot = MediData.otTheatres.find(o => o.id === otId) || MediData.otTheatres[0];
+        const procedure = document.getElementById('surgProcedureInput').value || 'Elective Surgical Procedure';
+        const indication = document.getElementById('surgIndicationInput').value || 'Clinical surgical indication';
+        const surgeon = document.getElementById('surgChiefSurgeonSelect').value;
+        const anesthetist = document.getElementById('surgAnesthetistSelect').value;
+        const anesthType = document.getElementById('surgAnesthesiaTypeSelect').value;
+        const date = document.getElementById('surgDateInput').value;
+        const slot = document.getElementById('surgSlotSelect').value;
+        const packageAmt = parseInt(document.getElementById('surgPackageAmountInput').value) || 50000;
+
+        const newSurgId = `SURG-2026-00${Math.floor(45 + Math.random() * 10)}`;
+
+        const newSurgery = {
+            id: newSurgId,
+            otId: ot.id,
+            otName: ot.name,
+            patientId: admission.patientId,
+            patientName: admission.patientName,
+            ipdNo: admission.ipdNo,
+            bedNo: admission.bedNo,
+            procedureName: procedure,
+            indication: indication,
+            chiefSurgeon: surgeon,
+            assistantSurgeon: "Dr. Siddharth Sen",
+            anesthetist: anesthetist,
+            scrubNurse: "Staff Nurse Sarita",
+            anesthesiaType: anesthType,
+            scheduleDate: date,
+            timeSlot: slot,
+            status: "Scheduled",
+            whoChecklist: {
+                signIn: { completed: false, verifiedBy: null, time: null },
+                timeOut: { completed: false, verifiedBy: null, time: null },
+                signOut: { completed: false, verifiedBy: null, time: null }
+            },
+            implantsConsumables: [
+                { item: "Surgical Drape Kit & Suture Pack", qty: 1, cost: 3500 }
+            ],
+            packageAmount: packageAmt,
+            surgeonFee: Math.round(packageAmt * 0.4),
+            anesthesiaFee: Math.round(packageAmt * 0.15),
+            otCharges: Math.round(packageAmt * 0.3),
+            consumablesTotal: 3500
+        };
+
+        MediData.otSurgeries.unshift(newSurgery);
+        ot.status = 'Ready / Scheduled';
+        ot.currentSurgery = procedure;
+        ot.surgeon = surgeon;
+
+        playAudioFx('chime');
+        triggerConfetti();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: `${surgeon}`,
+            action: 'OT_SURGERY_BOOKED',
+            entity: `Surgery #${newSurgId}`,
+            tenant: MediData.tenant.id,
+            details: `Booked ${procedure} in ${ot.name} for ${admission.patientName}. Slot: ${slot}.`,
+            ip: '192.168.1.108'
+        });
+        renderAuditLogs();
+
+        document.getElementById('bookSurgeryModal').classList.remove('active');
+        showToast(`Surgery ${procedure} booked in ${ot.name}!`, 'success', 'OT Management');
+        renderOtManagement();
+    };
+
+    window.openWhoChecklistModal = function(surgId) {
+        const surgery = MediData.otSurgeries.find(s => s.id === surgId);
+        if (!surgery) return;
+
+        const who = surgery.whoChecklist;
+        const container = document.getElementById('whoChecklistModalBody');
+
+        container.innerHTML = `
+            <div style="margin-bottom: 16px; padding: 12px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 800; font-size: 15px; color: var(--text-heading);">${surgery.procedureName}</div>
+                    <div style="font-size: 12px; color: var(--text-muted);">Patient: <b>${surgery.patientName}</b> (${surgery.ipdNo}) • Surgeon: <b>${surgery.chiefSurgeon}</b></div>
+                </div>
+                <span class="badge badge-purple">${surgery.id}</span>
+            </div>
+
+            <!-- Stage 1: SIGN-IN (Before induction of anesthesia) -->
+            <div class="card" style="margin-bottom: 14px; border-left: 4px solid ${who.signIn?.completed ? 'var(--emerald-500)' : 'var(--amber-500)'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text-heading);">1. SIGN IN (Before Induction of Anesthesia)</h4>
+                        <div style="font-size: 11px; color: var(--text-muted);">With nurse and anesthesia professional</div>
+                    </div>
+                    ${who.signIn?.completed ? `
+                        <span class="badge badge-emerald"><i class="bi bi-check-circle-fill"></i> Verified at ${who.signIn.time} (${who.signIn.verifiedBy})</span>
+                    ` : `
+                        <button class="btn btn-emerald btn-xs" onclick="signWhoChecklistStage('${surgery.id}', 'signIn')">
+                            <i class="bi bi-check2"></i> Verify & Sign-In
+                        </button>
+                    `}
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 12px; color: var(--text-secondary);">
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Patient identity, site & consent confirmed</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Surgical site marked by surgeon</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Anesthesia machine & medication check complete</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Pulse oximeter on patient and functioning</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Known allergy checked: <b>Penicillin (Moderate)</b></div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Difficult airway / aspiration risk evaluated</div>
+                </div>
+            </div>
+
+            <!-- Stage 2: TIME-OUT (Before skin incision) -->
+            <div class="card" style="margin-bottom: 14px; border-left: 4px solid ${who.timeOut?.completed ? 'var(--emerald-500)' : 'var(--amber-500)'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text-heading);">2. TIME OUT (Before Skin Incision)</h4>
+                        <div style="font-size: 11px; color: var(--text-muted);">Entire team actively participates</div>
+                    </div>
+                    ${who.timeOut?.completed ? `
+                        <span class="badge badge-emerald"><i class="bi bi-check-circle-fill"></i> Verified at ${who.timeOut.time} (${who.timeOut.verifiedBy})</span>
+                    ` : `
+                        <button class="btn btn-emerald btn-xs" onclick="signWhoChecklistStage('${surgery.id}', 'timeOut')">
+                            <i class="bi bi-check2"></i> Verify & Time-Out
+                        </button>
+                    `}
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 12px; color: var(--text-secondary);">
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Team members introduce name and role</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Surgeon, Anesthetist & Nurse confirm patient & site</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Anticipated critical steps & blood loss reviewed</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Antibiotic prophylaxis given within past 60 min</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Essential diagnostic imaging displayed</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Sterility indicators verified by scrub nurse</div>
+                </div>
+            </div>
+
+            <!-- Stage 3: SIGN-OUT (Before patient leaves operating room) -->
+            <div class="card" style="border-left: 4px solid ${who.signOut?.completed ? 'var(--emerald-500)' : 'var(--amber-500)'};">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div>
+                        <h4 style="margin: 0; font-size: 14px; font-weight: 800; color: var(--text-heading);">3. SIGN OUT (Before Patient Leaves OT)</h4>
+                        <div style="font-size: 11px; color: var(--text-muted);">With nurse, anesthesia and surgeon</div>
+                    </div>
+                    ${who.signOut?.completed ? `
+                        <span class="badge badge-emerald"><i class="bi bi-check-circle-fill"></i> Verified at ${who.signOut.time} (${who.signOut.verifiedBy})</span>
+                    ` : `
+                        <button class="btn btn-emerald btn-xs" onclick="signWhoChecklistStage('${surgery.id}', 'signOut')">
+                            <i class="bi bi-check2"></i> Verify & Sign-Out
+                        </button>
+                    `}
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 12px; color: var(--text-secondary);">
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Name of procedure recorded accurately</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Instrument, sponge and needle counts 100% correct</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Specimen labeled correctly with patient name</div>
+                    <div><i class="bi bi-check-square-fill text-emerald"></i> Key concerns for post-op recovery & PACU handover discussed</div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('whoChecklistModal').classList.add('active');
+    };
+
+    window.signWhoChecklistStage = function(surgId, stage) {
+        const surgery = MediData.otSurgeries.find(s => s.id === surgId);
+        if (!surgery) return;
+
+        surgery.whoChecklist[stage] = {
+            completed: true,
+            verifiedBy: MediData.currentUser.name,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+        };
+
+        playAudioFx('success');
+        triggerConfetti();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: `${MediData.currentUser.name}`,
+            action: `WHO_CHECKLIST_${stage.toUpperCase()}_SIGNED`,
+            entity: `Surgery #${surgId}`,
+            tenant: MediData.tenant.id,
+            details: `WHO Surgical Checklist stage ${stage} completed for ${surgery.patientName} (${surgery.procedureName}).`,
+            ip: '192.168.1.108'
+        });
+        renderAuditLogs();
+
+        showToast(`WHO Checklist ${stage} verified & recorded!`, 'success', 'Surgical Safety');
+        openWhoChecklistModal(surgId);
+        renderOtManagement();
+    };
+
+    // 2. Insurance & TPA Claims Management Desk (M17, INS-01 to 05)
+    function renderTpaClaimsDesk(filterText = '', payerFilter = currentTpaPayerFilter) {
+        currentTpaPayerFilter = payerFilter;
+        const tbody = document.getElementById('tpaClaimsTableBody');
+        if (!tbody) return;
+
+        let filtered = MediData.tpaClaims;
+        if (payerFilter !== 'all') {
+            filtered = filtered.filter(c => c.tpaCode === payerFilter);
+        }
+        if (filterText) {
+            filtered = filtered.filter(c => {
+                const text = `${c.id} ${c.patientName} ${c.policyNo} ${c.payerName} ${c.status}`.toLowerCase();
+                return text.includes(filterText.toLowerCase());
+            });
+        }
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 24px; color: var(--text-muted);">No matching TPA claim records found.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(claim => {
+            let statusBadge = '';
+            if (claim.status.includes('Settled')) {
+                statusBadge = `<span class="badge badge-emerald"><i class="bi bi-check2-all"></i> ${claim.status}</span>`;
+            } else if (claim.status.includes('Granted') || claim.status.includes('Approved')) {
+                statusBadge = `<span class="badge badge-purple"><i class="bi bi-shield-check"></i> ${claim.status}</span>`;
+            } else if (claim.status.includes('Pending') || claim.status.includes('Query')) {
+                statusBadge = `<span class="badge badge-amber"><i class="bi bi-exclamation-circle-fill"></i> ${claim.status}</span>`;
+            } else {
+                statusBadge = `<span class="badge badge-outline">${claim.status}</span>`;
+            }
+
+            return `
+                <tr>
+                    <td>
+                        <div style="font-weight: 800; color: var(--primary-600); font-family: 'JetBrains Mono', monospace;">${claim.id}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Policy: <b>${claim.policyNo}</b></div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">${claim.patientName}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">IPD: <b>${claim.ipdNo}</b></div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; font-size: 12.5px; color: var(--text-heading);">${claim.payerName}</div>
+                        <span class="badge badge-outline" style="font-size: 10px;">${claim.tpaCode}</span>
+                    </td>
+                    <td>
+                        <div style="font-size: 12px; font-weight: 600; color: var(--text-primary); max-width: 220px;">${claim.provisionalDiagnosis}</div>
+                        ${claim.preauthQuery ? `<div style="font-size: 10.5px; color: var(--rose-500); font-weight: 700; margin-top: 2px;"><i class="bi bi-chat-left-dots-fill"></i> Query: ${claim.preauthQuery}</div>` : ''}
+                    </td>
+                    <td>
+                        <div style="font-size: 12px;">Req: <b>₹${claim.requestedAmount.toLocaleString('en-IN')}</b></div>
+                        <div style="font-size: 12px; color: var(--emerald-600); font-weight: 800;">Appr: ₹${claim.initialApprovedAmount.toLocaleString('en-IN')}</div>
+                    </td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                            ${claim.claimPacketFiles.map(f => `<span class="badge badge-outline" style="font-size: 9.5px;"><i class="bi bi-paperclip"></i> ${f.split('_')[0]}</span>`).join('')}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn btn-outline btn-xs" onclick="openPrintablePreauthLetter('${claim.id}')" title="Print Pre-Auth Packet">
+                                <i class="bi bi-printer"></i> Letter
+                            </button>
+                            <button class="btn btn-primary btn-xs" onclick="showToast('Pre-Auth Enhancement Request Dispatched to TPA Desk!')" title="Request Enhancement">
+                                <i class="bi bi-arrow-up-right-circle"></i> +Enhance
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.filterTpaClaimsTable = function() {
+        const input = document.getElementById('tpaSearchInput');
+        const text = input ? input.value : '';
+        renderTpaClaimsDesk(text);
+    };
+
+    window.filterTpaByPayer = function(payerCode) {
+        currentTpaPayerFilter = payerCode;
+        const pills = document.querySelectorAll('#tpaPayerFilterPills .pill-btn');
+        pills.forEach(p => {
+            if ((payerCode === 'all' && p.innerText.includes('All')) || p.innerText.includes(payerCode) || (payerCode === 'STAR-HLTH' && p.innerText.includes('Star')) || (payerCode === 'HDFC-ERGO' && p.innerText.includes('HDFC')) || (payerCode === 'PM-JAY' && p.innerText.includes('PM-JAY'))) {
+                p.classList.add('active');
+            } else {
+                p.classList.remove('active');
+            }
+        });
+        renderTpaClaimsDesk('', payerCode);
+    };
+
+    window.openNewPreauthClaimModal = function() {
+        const patSelect = document.getElementById('tpaPatientSelect');
+        const payerSelect = document.getElementById('tpaPayerSelect');
+
+        if (patSelect) {
+            patSelect.innerHTML = MediData.ipdAdmissions.map(a => `<option value="${a.ipdNo}">${a.patientName} (${a.bedNo} • ${a.ipdNo})</option>`).join('');
+        }
+        if (payerSelect) {
+            payerSelect.innerHTML = MediData.insurancePayers.map(p => `<option value="${p.code}">${p.name} (${p.code})</option>`).join('');
+        }
+
+        document.getElementById('newPreauthClaimModal').classList.add('active');
+    };
+
+    window.submitNewTpaClaim = function() {
+        const ipdNo = document.getElementById('tpaPatientSelect').value;
+        const admission = MediData.ipdAdmissions.find(a => a.ipdNo === ipdNo) || MediData.ipdAdmissions[0];
+        const payerCode = document.getElementById('tpaPayerSelect').value;
+        const payer = MediData.insurancePayers.find(p => p.code === payerCode) || MediData.insurancePayers[0];
+        const policyNo = document.getElementById('tpaPolicyNoInput').value || 'POL-2026-9941';
+        const reqAmt = parseInt(document.getElementById('tpaRequestedAmountInput').value) || 60000;
+        const diag = document.getElementById('tpaDiagnosisInput').value || admission.admissionReason;
+
+        const newClaimId = `CLM-2026-0${Math.floor(82 + Math.random() * 10)}`;
+
+        const newClaim = {
+            id: newClaimId,
+            ipdNo: admission.ipdNo,
+            patientName: admission.patientName,
+            patientId: admission.patientId,
+            policyNo: policyNo,
+            payerName: payer.name,
+            tpaCode: payer.code,
+            admissionDate: admission.admitDateTime.split(',')[0],
+            provisionalDiagnosis: diag,
+            requestedAmount: reqAmt,
+            initialApprovedAmount: Math.round(reqAmt * 0.8), // 80% instant approval guarantee
+            enhancementRequested: 0,
+            finalSettledAmount: 0,
+            coPayPercent: 10,
+            nonPayableDeductions: 2500,
+            status: "Initial Approval Granted",
+            preauthQuery: null,
+            claimPacketFiles: ["Govt_ID_Proof.pdf", "TPA_Insurance_Card.pdf", "Doctor_First_Prescription.pdf", "Diagnostic_Workup_Reports.pdf"],
+            lastUpdated: "Just Now"
+        };
+
+        MediData.tpaClaims.unshift(newClaim);
+
+        playAudioFx('chime');
+        triggerConfetti();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: 'TPA Desk Executive',
+            action: 'TPA_PREAUTH_SUBMITTED',
+            entity: `Claim #${newClaimId}`,
+            tenant: MediData.tenant.id,
+            details: `Submitted Cashless Pre-Auth packet of ₹${reqAmt.toLocaleString('en-IN')} to ${payer.name} for ${admission.patientName}.`,
+            ip: '192.168.1.115'
+        });
+        renderAuditLogs();
+
+        document.getElementById('newPreauthClaimModal').classList.remove('active');
+        showToast(`Pre-Auth of ₹${reqAmt.toLocaleString('en-IN')} submitted to ${payer.code}!`, 'success', 'TPA Cashless Desk');
+        renderTpaClaimsDesk();
+    };
+
+    window.openPrintablePreauthLetter = function(claimId) {
+        const claim = MediData.tpaClaims.find(c => c.id === claimId) || MediData.tpaClaims[0];
+        const container = document.getElementById('printablePreauthContent');
+
+        container.innerHTML = `
+            <div class="discharge-sheet-container">
+                <div class="discharge-header-box">
+                    <div>
+                        <h2 style="margin: 0; color: #0284c7; font-size: 20px; font-weight: 800;">${MediData.tenant.name}</h2>
+                        <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${MediData.tenant.address} • ROHINI Code: 89004128</div>
+                        <div style="font-size: 11px; color: #64748b;">Hospital TPA Desk: ${MediData.tenant.phone} • Email: cashless@apexhealth.in</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 14px; font-weight: 800; color: #0f172a;">CASHLESS PRE-AUTHORIZATION REQUEST</div>
+                        <div style="font-size: 11px; font-weight: 700; color: #0284c7;">Claim ID: ${claim.id}</div>
+                    </div>
+                </div>
+
+                <div class="discharge-grid-meta">
+                    <div><b>Patient Name:</b> ${claim.patientName}</div>
+                    <div><b>IPD Number:</b> ${claim.ipdNo}</div>
+                    <div><b>Insurance / TPA:</b> ${claim.payerName} (${claim.tpaCode})</div>
+                    <div><b>Policy / Card ID:</b> ${claim.policyNo}</div>
+                    <div><b>Admission Date:</b> ${claim.admissionDate}</div>
+                    <div><b>Pre-Auth Status:</b> <span style="color: #10b981; font-weight: 800;">${claim.status}</span></div>
+                </div>
+
+                <div class="discharge-section-title">Clinical Diagnosis & Planned Treatment</div>
+                <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">
+                    ${claim.provisionalDiagnosis}
+                </div>
+
+                <div class="discharge-section-title">Financial Pre-Authorization Breakdown</div>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 16px;">
+                    <thead>
+                        <tr style="background: #f1f5f9; text-align: left;">
+                            <th style="padding: 8px; border: 1px solid #cbd5e1;">Particulars</th>
+                            <th style="padding: 8px; border: 1px solid #cbd5e1; text-align: right;">Amount (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Estimated Hospitalization Package Total</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 700;">₹${claim.requestedAmount.toLocaleString('en-IN')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; color: #10b981;"><b>Initial Cashless Guarantee Approved by TPA</b></td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 800; color: #10b981;">₹${claim.initialApprovedAmount.toLocaleString('en-IN')}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1;">Co-Payment (${claim.coPayPercent}%) & Non-Payable Disallowance Estimate</td>
+                            <td style="padding: 8px; border: 1px solid #cbd5e1; text-align: right; font-weight: 700; color: #e11d48;">₹${claim.nonPayableDeductions.toLocaleString('en-IN')}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="discharge-section-title">Mandatory Attached Document Checklist</div>
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; font-size: 11.5px; color: #334155; margin-bottom: 20px;">
+                    ${claim.claimPacketFiles.map(f => `<div><i class="bi bi-check-circle-fill" style="color: #10b981;"></i> ${f} [E-Signed & Attached]</div>`).join('')}
+                </div>
+
+                <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; padding-top: 14px; border-top: 1px solid #cbd5e1;">
+                    <div>
+                        <div style="font-size: 11px; color: #64748b;">Hospital TPA Desk Official Stamp:</div>
+                        <div style="font-weight: 800; color: #0284c7; font-size: 13px; margin-top: 2px;">Apex Healthcare Cashless Operations</div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-weight: 800; color: #0f172a; font-size: 13px;">Authorized TPA Signatory</div>
+                        <div style="font-size: 10px; color: #0284c7; font-weight: 700; margin-top: 4px;">[ Digitally Generated Certificate ]</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('printablePreauthLetterModal').classList.add('active');
+    };
+
+    // 3. Hospital Procurement & Central Stores (M18)
+    function renderHospitalProcurement() {
+        const invTbody = document.getElementById('hospitalInventoryTableBody');
+        const poTbody = document.getElementById('purchaseOrdersTableBody');
+        if (!invTbody || !poTbody) return;
+
+        // Render Inventory Master
+        invTbody.innerHTML = MediData.hospitalInventory.map(item => {
+            const isLow = item.currentStock <= item.reorderLevel;
+            return `
+                <tr>
+                    <td>
+                        <div style="font-weight: 800; color: var(--primary-600); font-family: 'JetBrains Mono', monospace;">${item.id}</div>
+                        <div style="font-weight: 700; color: var(--text-heading);">${item.name}</div>
+                    </td>
+                    <td><span class="badge badge-purple">${item.category}</span></td>
+                    <td>
+                        <div>${item.unit}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);"><i class="bi bi-geo-alt-fill"></i> ${item.location}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 800; font-size: 14px; color: ${isLow ? 'var(--rose-500)' : 'var(--emerald-600)'};">${item.currentStock} Units</div>
+                    </td>
+                    <td><b>${item.reorderLevel}</b> Units</td>
+                    <td><b>₹${item.unitCost}</b></td>
+                    <td style="font-size: 12px; color: var(--text-muted);">${item.supplier}</td>
+                    <td>
+                        ${isLow ? `
+                            <span class="badge badge-rose"><i class="bi bi-exclamation-triangle-fill"></i> Low Stock</span>
+                        ` : `
+                            <span class="badge badge-emerald"><i class="bi bi-check2"></i> Optimal</span>
+                        `}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Render Purchase Orders
+        poTbody.innerHTML = MediData.purchaseOrders.map(po => {
+            const isReceived = po.status.includes('GRN Received');
+            return `
+                <tr>
+                    <td>
+                        <div style="font-weight: 800; color: var(--primary-600); font-family: 'JetBrains Mono', monospace;">${po.id}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-heading);">${po.supplier}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">${po.raisedBy}</div>
+                    </td>
+                    <td>${po.date}</td>
+                    <td>
+                        <div style="font-size: 12px;">
+                            ${po.items.map(i => `<div>• ${i.name} (Qty: <b>${i.qty}</b>)</div>`).join('')}
+                        </div>
+                    </td>
+                    <td style="font-weight: 800; font-size: 13.5px; color: var(--text-primary);">₹${po.totalAmount.toLocaleString('en-IN')}</td>
+                    <td>${po.expectedDelivery}</td>
+                    <td>
+                        <span class="badge ${isReceived ? 'badge-emerald' : 'badge-amber'}">${po.status}</span>
+                    </td>
+                    <td>
+                        ${isReceived ? `
+                            <span class="badge badge-outline" style="font-size: 10px;"><i class="bi bi-check-all"></i> Stock Updated</span>
+                        ` : `
+                            <button class="btn btn-emerald btn-xs" onclick="receiveGrnForPo('${po.id}')">
+                                <i class="bi bi-box-arrow-in-down"></i> Receive GRN
+                            </button>
+                        `}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.openNewPurchaseOrderModal = function() {
+        const itemSelect = document.getElementById('poItemSelect');
+        if (itemSelect) {
+            itemSelect.innerHTML = MediData.hospitalInventory.map(i => `<option value="${i.id}">${i.name} (${i.unit} • ₹${i.unitCost})</option>`).join('');
+        }
+        document.getElementById('newPurchaseOrderModal').classList.add('active');
+    };
+
+    window.submitNewPurchaseOrder = function() {
+        const supplier = document.getElementById('poSupplierSelect').value;
+        const itemId = document.getElementById('poItemSelect').value;
+        const item = MediData.hospitalInventory.find(i => i.id === itemId) || MediData.hospitalInventory[0];
+        const qty = parseInt(document.getElementById('poQtyInput').value) || 20;
+        const deliveryDate = document.getElementById('poDeliveryDate').value;
+
+        const total = qty * item.unitCost;
+        const newPoId = `PO-2026-00${Math.floor(46 + Math.random() * 10)}`;
+
+        const newPo = {
+            id: newPoId,
+            supplier: supplier,
+            date: "Today",
+            items: [
+                { name: item.name, qty: qty, rate: item.unitCost, total: total }
+            ],
+            totalAmount: total,
+            status: "Approved & Sent to Vendor",
+            expectedDelivery: deliveryDate,
+            raisedBy: "Purchase Mgr. R. Sharma"
+        };
+
+        MediData.purchaseOrders.unshift(newPo);
+
+        playAudioFx('chime');
+        triggerConfetti();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: 'Purchase Manager (INV-04)',
+            action: 'PURCHASE_ORDER_GENERATED',
+            entity: `PO #${newPoId}`,
+            tenant: MediData.tenant.id,
+            details: `Created Purchase Order of ₹${total.toLocaleString('en-IN')} for ${qty} × ${item.name} from ${supplier}.`,
+            ip: '192.168.1.118'
+        });
+        renderAuditLogs();
+
+        document.getElementById('newPurchaseOrderModal').classList.remove('active');
+        showToast(`Purchase Order ${newPoId} created for ₹${total.toLocaleString('en-IN')}!`, 'success', 'Hospital Procurement');
+        renderHospitalProcurement();
+    };
+
+    window.receiveGrnForPo = function(poId) {
+        const po = MediData.purchaseOrders.find(p => p.id === poId);
+        if (!po) return;
+
+        po.status = "GRN Received & Stock Updated";
+
+        // Increment inventory
+        po.items.forEach(poItem => {
+            const match = MediData.hospitalInventory.find(i => poItem.name.includes(i.name.split(' ')[0]) || i.name.includes(poItem.name.split(' ')[0]));
+            if (match) {
+                match.currentStock += poItem.qty;
+            }
+        });
+
+        playAudioFx('success');
+        triggerConfetti();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: 'Central Store In-Charge (INV-05)',
+            action: 'GRN_RECEIVED_STOCK_UPDATED',
+            entity: `GRN for PO #${poId}`,
+            tenant: MediData.tenant.id,
+            details: `Goods received and verified for PO ${poId}. Stock balances automatically reconciled in central store ledger.`,
+            ip: '192.168.1.118'
+        });
+        renderAuditLogs();
+
+        showToast(`GRN received for ${poId}! Central store stock updated.`, 'success', 'Goods Receipt Note');
+        renderHospitalProcurement();
+    };
+
+    window.openIssueStockModal = function() {
+        const itemSelect = document.getElementById('issueItemSelect');
+        if (itemSelect) {
+            itemSelect.innerHTML = MediData.hospitalInventory.map(i => `<option value="${i.id}">${i.name} (Avail: ${i.currentStock} Units)</option>`).join('');
+        }
+        document.getElementById('issueStockModal').classList.add('active');
+    };
+
+    window.submitIssueStock = function() {
+        const itemId = document.getElementById('issueItemSelect').value;
+        const dept = document.getElementById('issueDepartmentSelect').value;
+        const qty = parseInt(document.getElementById('issueQtyInput').value) || 5;
+
+        const item = MediData.hospitalInventory.find(i => i.id === itemId);
+        if (!item) return;
+
+        if (item.currentStock < qty) {
+            showToast(`Insufficient stock! Available: ${item.currentStock}`, 'error');
+            return;
+        }
+
+        item.currentStock -= qty;
+
+        playAudioFx('click');
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: 'Central Storekeeper (INV-06)',
+            action: 'STOCK_ISSUED_TO_DEPARTMENT',
+            entity: `Item #${item.id}`,
+            tenant: MediData.tenant.id,
+            details: `Issued ${qty} × ${item.name} to ${dept}. Remaining balance: ${item.currentStock}.`,
+            ip: '192.168.1.118'
+        });
+        renderAuditLogs();
+
+        document.getElementById('issueStockModal').classList.remove('active');
+        showToast(`Issued ${qty} units of ${item.name} to ${dept}`, 'success', 'Stock Transfer');
+        renderHospitalProcurement();
+    };
+
+    // 4. Multi-Branch Enterprise Central Hub (M01, TEN-02)
+    function renderMultiBranchHub() {
+        const grid = document.getElementById('multiBranchCardsGrid');
+        if (!grid) return;
+
+        grid.innerHTML = MediData.multiBranchStats.map(branch => {
+            return `
+                <div class="card" style="padding: 20px; position: relative;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                        <div>
+                            <span class="badge badge-purple" style="margin-bottom: 6px;">${branch.id}</span>
+                            <h4 style="margin: 0; font-size: 16px; font-weight: 800; color: var(--text-heading);">${branch.name}</h4>
+                            <div style="font-size: 11.5px; color: var(--text-muted);">${branch.type}</div>
+                        </div>
+                        <span class="badge badge-emerald"><i class="bi bi-circle-fill" style="font-size: 8px;"></i> ${branch.status}</span>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 16px 0; background: var(--bg-main); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Total Beds</div>
+                            <div style="font-size: 16px; font-weight: 800; color: var(--text-primary);"><i class="bi bi-hospital"></i> ${branch.beds} Beds</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Doctors On Roster</div>
+                            <div style="font-size: 16px; font-weight: 800; color: var(--text-primary);"><i class="bi bi-person-badge"></i> ${branch.doctors} Doctors</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Today's Footfall</div>
+                            <div style="font-size: 16px; font-weight: 800; color: var(--primary-600);"><i class="bi bi-people-fill"></i> ${branch.todayFootfall} Patients</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Bed Occupancy</div>
+                            <div style="font-size: 16px; font-weight: 800; color: var(--emerald-600);"><i class="bi bi-pie-chart-fill"></i> ${branch.bedOccupancy}</div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 1px dashed var(--border-subtle);">
+                        <div style="font-size: 12.5px;">Monthly Revenue: <b style="color: var(--text-heading);">${branch.monthRevenue}</b></div>
+                        <button class="btn btn-outline btn-xs" onclick="showToast('Switched operational context to ${branch.name}')">
+                            <i class="bi bi-box-arrow-in-right"></i> Manage Branch
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 
     // --------------------------------------------------------------------------
     // 7. Preserved Phase 1 & 2 Functions (EMR, Billing, Portal, Booking, etc.)
