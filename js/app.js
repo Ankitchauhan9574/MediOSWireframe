@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderPharmacyBatches();
         renderPharmacyRxQueueTable();
         renderLabWorklist();
+        renderRadiologyWorklist();
         renderDoctorPayouts();
         renderIpdBedMap();
         renderIpdAdmissionsTable();
@@ -121,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'billing': { title: 'Smart Billing & Cash Desk (POS)', section: 'Revenue & Accounts' },
             'pharmacy': { title: 'Pharmacy Inventory & FEFO Batch Ledger', section: 'Pharmacy Suite (Phase 3)' },
             'lab': { title: 'Pathology & Diagnostic Lab Worklist', section: 'Laboratory Suite (Phase 3)' },
+            'radiology': { title: 'Radiology, Digital X-Ray & DICOM Imaging Suite', section: 'Diagnostic Imaging (Phase 3)' },
             'payouts': { title: 'Doctor Revenue Share & Payout Statements', section: 'Doctor Operations (OPS-01)' },
             'ipd-bed-map': { title: 'Interactive Ward & Bed Occupancy Map', section: 'Hospital Core (Phase 4)' },
             'ipd-admissions': { title: 'In-Patient (IPD) Admissions Directory', section: 'Hospital Core (Phase 4)' },
@@ -943,58 +945,832 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --------------------------------------------------------------------------
-    // 4. PHASE 3: Pathology & Lab Active Worklist (LAB-01 - 07)
+    // 4. PHASE 3: Pathology & Lab Active Worklist & Claim Desk (LAB-01 - 07)
     // --------------------------------------------------------------------------
-    function renderLabWorklist() {
+    function renderLabWorklist(filteredLabId = 'all') {
         const tbody = document.getElementById('labWorklistTableBody');
-        if (!tbody) return;
+        if (!tbody || !MediData.activeLabWorklist) return;
 
-        tbody.innerHTML = MediData.activeLabWorklist.map(w => `
-            <tr>
-                <td>
-                    <span style="font-family: var(--font-mono); font-weight: 700; color: var(--primary-600);">${w.sampleBarcode}</span>
-                    <div style="font-size: 11px; color: var(--text-muted);">${w.orderId}</div>
-                </td>
-                <td>
-                    <div style="font-weight: 700;">${w.patientName}</div>
-                    <div style="font-size: 11.5px; color: var(--text-secondary);">${w.ageSex} • ${w.mrn}</div>
-                </td>
-                <td>
-                    <div style="font-weight: 700;">${w.testName}</div>
-                    <div style="font-size: 11px; color: var(--text-muted);">Ordered by: ${w.orderedBy}</div>
-                </td>
-                <td>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span class="sample-tube-indicator ${w.testCode === 'LAB-01' || w.testCode === 'LAB-03' ? 'tube-purple' : 'tube-red'}"></span>
-                        <span style="font-weight: 600; font-size: 12px;">${w.category}</span>
-                    </div>
-                </td>
-                <td>
-                    <span class="badge ${w.sampleStatus === 'Released' ? 'badge-green' : w.sampleStatus === 'Sample Collected' ? 'badge-blue' : 'badge-amber'}">
-                        ${w.sampleStatus}
-                    </span>
-                </td>
-                <td>
-                    <div style="font-size: 11.5px; font-weight: 600; color: ${w.verificationStatus.includes('Verified') ? 'var(--emerald-600)' : 'var(--text-primary)'};">
-                        ${w.verificationStatus}
-                    </div>
-                </td>
-                <td>
-                    <div style="display: flex; gap: 6px;">
-                        ${w.sampleStatus === 'Released' ? `
-                            <button class="btn btn-sm btn-primary" onclick="openOfficialLabReportModal('${w.orderId}')">
-                                <i class="bi bi-file-earmark-pdf"></i> Report PDF
-                            </button>
-                        ` : `
-                            <button class="btn btn-sm btn-teal" onclick="openLabResultEntryModal('${w.orderId}')">
-                                <i class="bi bi-pencil-square"></i> Review & Sign
-                            </button>
-                        `}
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+        let list = MediData.activeLabWorklist;
+        if (filteredLabId && filteredLabId !== 'all') {
+            list = list.filter(w => w.targetLabId === filteredLabId);
+        }
+
+        if (list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                        <i class="bi bi-inbox" style="font-size: 24px;"></i>
+                        <div style="margin-top: 6px; font-weight: 600;">No pending diagnostic orders for this laboratory.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = list.map(w => {
+            const isReleased = w.sampleStatus === 'Released';
+            const isCollected = w.sampleStatus === 'Sample Collected' || w.sampleStatus === 'Processing';
+            const tubeClass = (w.testCode === 'LAB-01' || w.testCode === 'LAB-03') ? 'tube-purple' : 'tube-red';
+
+            return `
+                <tr style="${isReleased ? 'opacity: 0.85;' : 'background: rgba(79, 70, 229, 0.02);'}">
+                    <td>
+                        <span style="font-family: var(--font-mono); font-weight: 800; color: var(--primary-600);">${w.serialNo || w.orderId}</span>
+                        <div style="font-size: 11px; color: var(--text-muted);"><i class="bi bi-upc"></i> ${w.sampleBarcode || 'BAR-GEN'}</div>
+                    </td>
+                    <td>
+                        <div class="rx-claim-key-pill" title="Unique Patient Claim Key" style="background: rgba(79, 70, 229, 0.12); color: var(--primary-600); font-weight: 900; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-family: var(--font-mono); border: 1px solid rgba(79, 70, 229, 0.3); display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="bi bi-key-fill" style="font-size: 11px;"></i> ${w.claimKey || '894-210'}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">${w.patientName}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">${w.ageSex} • ${w.patientPhone || '+91 98210 44521'}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-heading);">${w.testName}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Ordered by: ${w.orderedBy}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; font-size: 12px; color: var(--indigo-700);">${w.targetLabName || 'Apex Central Pathology Lab'}</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);"><i class="bi bi-clock"></i> ${w.orderTime || 'Today'}</div>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span class="sample-tube-indicator ${tubeClass}"></span>
+                            <span style="font-weight: 600; font-size: 12px;">${w.category}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge ${isReleased ? 'badge-green' : isCollected ? 'badge-blue' : 'badge-amber'}">
+                            ${w.sampleStatus}
+                        </span>
+                        <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 2px;">${w.collectedBy || 'Pending phlebotomist'}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 11.5px; font-weight: 600; color: ${w.verificationStatus && w.verificationStatus.includes('Verified') ? 'var(--emerald-600)' : 'var(--text-primary)'};">
+                            ${w.verificationStatus || 'Awaiting Analyzer'}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            ${isReleased ? `
+                                <button class="btn btn-sm btn-primary" onclick="openOfficialLabReportModal('${w.orderId}')">
+                                    <i class="bi bi-file-earmark-pdf"></i> Report PDF
+                                </button>
+                            ` : w.sampleStatus === 'Sample Collection Pending' || w.sampleStatus === 'Ordered' ? `
+                                <button class="btn btn-sm btn-primary" onclick="openLabPhlebotomyModal('${w.orderId}')" style="font-weight: 700;">
+                                    <i class="bi bi-eyedropper"></i> Collect Sample
+                                </button>
+                            ` : `
+                                <button class="btn btn-sm btn-teal" onclick="openLabResultEntryModal('${w.orderId}')">
+                                    <i class="bi bi-pencil-square"></i> Review & Sign
+                                </button>
+                            `}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
+
+    window.filterLabOrdersByCenter = function(centerId) {
+        renderLabWorklist(centerId);
+    };
+
+    window.verifyAndClaimLabOrderByKey = function(inputKey = null) {
+        const rawKey = inputKey || (document.getElementById('labClaimKeySearchInput') ? document.getElementById('labClaimKeySearchInput').value : '');
+        const cleanKey = (rawKey || '').replace(/[\s-]/g, '').toLowerCase().trim();
+
+        if (!cleanKey) {
+            showToast('Please enter a Claim Key, Barcode, or Phone Number.', 'warning', 'Lab Claim Key Required');
+            return;
+        }
+
+        const foundOrder = MediData.activeLabWorklist.find(o => {
+            const k = (o.claimKey || '').replace(/[\s-]/g, '').toLowerCase();
+            const s = (o.serialNo || '').replace(/[\s-]/g, '').toLowerCase();
+            const b = (o.sampleBarcode || '').replace(/[\s-]/g, '').toLowerCase();
+            const r = (o.orderId || '').replace(/[\s-]/g, '').toLowerCase();
+            const p = (o.patientPhone || '').replace(/[\s-]/g, '').toLowerCase();
+            return k === cleanKey || s.includes(cleanKey) || b.includes(cleanKey) || r.includes(cleanKey) || p.includes(cleanKey);
+        });
+
+        if (foundOrder) {
+            playAudioFx('chime');
+            showToast(`Lab Claim Key Verified! Order found for ${foundOrder.patientName} (${foundOrder.testName})`, 'success', 'Lab Order Validated');
+            if (foundOrder.sampleStatus === 'Released') {
+                openOfficialLabReportModal(foundOrder.orderId);
+            } else if (foundOrder.sampleStatus === 'Sample Collection Pending' || foundOrder.sampleStatus === 'Ordered') {
+                openLabPhlebotomyModal(foundOrder.orderId);
+            } else {
+                openLabResultEntryModal(foundOrder.orderId);
+            }
+        } else {
+            playAudioFx('alert');
+            showToast(`No diagnostic lab order found matching "${rawKey}". Please check the 6-digit claim key on patient's WhatsApp message.`, 'error', 'Invalid Lab Key');
+        }
+    };
+
+    window.openLabPhlebotomyModal = function(orderId = 'LAB-ORD-9941') {
+        const order = MediData.activeLabWorklist.find(o => o.orderId === orderId) || MediData.activeLabWorklist[0];
+        state.currentPhlebotomyOrderId = order ? order.orderId : orderId;
+
+        const body = document.getElementById('labPhlebotomyModalBody');
+        if (body && order) {
+            body.innerHTML = `
+                <div style="background: var(--bg-main); padding: 14px 18px; border-radius: var(--radius-md); border: 1.5px solid var(--border-subtle); margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 800; font-size: 15px; color: var(--text-primary);">${order.patientName} (${order.ageSex || '48Y/M'})</span>
+                        <span class="rx-claim-key-pill" style="background: rgba(79,70,229,0.1); color: var(--primary-600); font-weight: 900; padding: 3px 8px; border-radius: 6px; font-family: var(--font-mono);">
+                            <i class="bi bi-key-fill"></i> ${order.claimKey || '894-210'}
+                        </span>
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                        MRN: <b>${order.mrn}</b> • Phone: <b>${order.patientPhone || '+91 98210 44521'}</b> • Ref Dr: <b>${order.orderedBy}</b>
+                    </div>
+                </div>
+
+                <div style="border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Investigation Ordered:</div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--primary-600);">${order.testName}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Category: <b>${order.category}</b> • Target Lab: <b>${order.targetLabName}</b></div>
+                </div>
+
+                <div style="background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 8px; padding: 12px; margin-bottom: 16px; display: flex; align-items: center; gap: 12px;">
+                    <span class="sample-tube-indicator ${order.testCode === 'LAB-01' || order.testCode === 'LAB-03' ? 'tube-purple' : 'tube-red'}" style="width: 24px; height: 24px;"></span>
+                    <div>
+                        <div style="font-weight: 800; font-size: 13px; color: #831843;">Required Vacuum Specimen Tube:</div>
+                        <div style="font-size: 12px; color: #9d174d;">${order.testCode === 'LAB-01' || order.testCode === 'LAB-03' ? 'EDTA K2 Vacuum Tube (Purple Cap • 3ml Whole Blood)' : 'Plain Serum Vacuum Tube (Red / Gold Gel Top • 4ml)'}</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Phlebotomist Staff Name *</label>
+                    <input type="text" id="phlebotomistNameInput" class="form-control" value="Phlebotomist Ramesh K. (DMLT)">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Assign New Barcode Label Number</label>
+                    <input type="text" id="phlebotomyBarcodeGenerated" class="form-control" value="${order.sampleBarcode || 'SAM-' + Math.floor(8800000 + Math.random()*99999)}" readonly style="font-family: var(--font-mono); font-weight: 800; color: var(--primary-600); background: var(--bg-main);">
+                </div>
+            `;
+        }
+
+        document.getElementById('labPhlebotomyModal').classList.add('active');
+    };
+
+    window.confirmSampleCollectionAction = function() {
+        const orderId = state.currentPhlebotomyOrderId || 'LAB-ORD-9941';
+        const order = MediData.activeLabWorklist.find(o => o.orderId === orderId);
+        const phlebName = document.getElementById('phlebotomistNameInput') ? document.getElementById('phlebotomistNameInput').value : 'Phlebotomist Ramesh K.';
+        const barcode = document.getElementById('phlebotomyBarcodeGenerated') ? document.getElementById('phlebotomyBarcodeGenerated').value : 'SAM-8849102';
+
+        if (order) {
+            order.sampleStatus = 'Processing';
+            order.sampleBarcode = barcode;
+            order.collectedBy = phlebName;
+            order.sampleTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            order.verificationStatus = 'Sample In Analyzer (Sysmex XN-350)';
+        }
+
+        document.getElementById('labPhlebotomyModal').classList.remove('active');
+        renderLabWorklist();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: phlebName,
+            action: 'SAMPLE_COLLECTED_AND_BARCODED',
+            entity: `Lab Order #${order ? order.orderId : 'LAB-ORD-9941'} • Claim #${order ? order.claimKey : '894-210'}`,
+            tenant: MediData.tenant.id,
+            details: `Validated claim key #${order ? order.claimKey : '894-210'}. Collected specimen from ${order ? order.patientName : 'patient'}. Generated barcode #${barcode} & queued to analyzer.`,
+            ip: '192.168.1.118'
+        });
+        renderAuditLogs();
+
+        playAudioFx('chime');
+        triggerConfetti();
+        showToast(`Sample Collected & Barcoded (${barcode}) for ${order ? order.patientName : 'patient'}!`, 'success', 'Phlebotomy Verified');
+    };
+
+    window.openLabQrScannerModal = function() {
+        document.getElementById('labQrScannerModal').classList.add('active');
+    };
+
+    window.submitSimulatedLabQrScan = function() {
+        const scannedKey = document.getElementById('simulatedLabScanKeyInput').value || '894-210';
+        document.getElementById('labQrScannerModal').classList.remove('active');
+        verifyAndClaimLabOrderByKey(scannedKey);
+    };
+
+    // --------------------------------------------------------------------------
+    // Doctor Lock, Sign & Diagnostic Lab Router (M11)
+    // --------------------------------------------------------------------------
+    window.lockSignAndRouteLabOrder = function() {
+        const p = MediData.patients.find(x => x.id === state.currentPatientId) || MediData.patients[0];
+        const doc = MediData.currentUser;
+        const targetLabId = document.getElementById('emrTargetLabSelect') ? document.getElementById('emrTargetLabSelect').value : 'LAB-CTR-01';
+        const targetLab = MediData.partnerPathologyLabs.find(l => l.id === targetLabId) || MediData.partnerPathologyLabs[0];
+
+        const selectedTestCodes = state.activeEncounter.labOrders && state.activeEncounter.labOrders.length > 0 ? state.activeEncounter.labOrders : ['LAB-01', 'LAB-02'];
+        const selectedTests = MediData.labTestsCatalogDetailed.filter(t => selectedTestCodes.includes(t.code));
+        const testNamesStr = selectedTests.map(t => t.name).join(' + ') || 'HbA1c & Fasting Glucose Profile';
+
+        const newOrderId = `LAB-ORD-${Math.floor(9945 + Math.random() * 50)}`;
+        const newSerialNo = `LAB-SRL-8849-0${MediData.activeLabWorklist.length + 1}`;
+        const rand1 = Math.floor(100 + Math.random() * 900);
+        const rand2 = Math.floor(100 + Math.random() * 900);
+        const newClaimKey = `${rand1}-${rand2}`;
+        const newBarcode = `SAM-88${Math.floor(49100 + Math.random() * 800)}`;
+
+        const newLabOrder = {
+            orderId: newOrderId,
+            serialNo: newSerialNo,
+            claimKey: newClaimKey,
+            sampleBarcode: newBarcode,
+            patientId: p.id,
+            patientName: p.name,
+            patientPhone: p.phone,
+            mrn: p.mrn,
+            ageSex: `${p.age} Y / ${p.gender.charAt(0)}`,
+            testCode: selectedTests[0] ? selectedTests[0].code : 'LAB-01',
+            testName: testNamesStr,
+            category: selectedTests[0] ? selectedTests[0].category : 'Biochemistry',
+            orderedBy: doc.name,
+            targetLabId: targetLab.id,
+            targetLabName: targetLab.name,
+            orderTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ', Today',
+            sampleStatus: "Sample Collection Pending",
+            collectedBy: null,
+            sampleTime: null,
+            criticalAlert: false,
+            resultEntered: false,
+            verificationStatus: "Awaiting Phlebotomy Collection"
+        };
+
+        MediData.activeLabWorklist.unshift(newLabOrder);
+        state.lastDispatchedLabOrder = newLabOrder;
+
+        // Render Modal Body
+        const modalBody = document.getElementById('labOrderDispatchModalBody');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <!-- Digital Lab Requisition Certificate -->
+                <div class="printable-document" style="border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; background: #ffffff; color: #0f172a; margin-bottom: 20px;">
+                    <div class="doc-hospital-header" style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 12px;">
+                        <div>
+                            <div style="font-size: 16px; font-weight: 800; color: #4338ca;">${MediData.tenant.name} — Laboratory Requisition</div>
+                            <div style="font-size: 11px; color: #64748b;">${MediData.tenant.address} • Phone: ${MediData.tenant.phone}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 800; color: #0f172a;">${doc.name}</div>
+                            <div style="font-size: 11px; color: #64748b;">${doc.qualification} • Reg: <b>${doc.regNo}</b></div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 10px 14px; border-radius: 6px; font-size: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; border: 1px solid #e2e8f0;">
+                        <div><b>Patient:</b> ${p.name} (${p.age} Yrs / ${p.gender})</div>
+                        <div><b>MRN:</b> ${p.mrn} • ABHA: ${p.abhaId}</div>
+                        <div><b>Lab Order ID:</b> ${newOrderId}</div>
+                        <div><b>Serial Number:</b> <span style="font-family: var(--font-mono); font-weight: 800; color: #4338ca;">${newSerialNo}</span></div>
+                    </div>
+
+                    <!-- Unique Claim Key Highlight Box -->
+                    <div style="background: linear-gradient(135deg, #4338ca, #3b82f6); color: #ffffff; padding: 14px 18px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <div style="font-size: 10.5px; text-transform: uppercase; font-weight: 800; opacity: 0.9;">PATIENT LAB CLAIM KEY (OTP)</div>
+                            <div style="font-size: 26px; font-weight: 900; font-family: var(--font-mono); letter-spacing: 0.05em; margin-top: 2px;">
+                                <i class="bi bi-key-fill"></i> ${newClaimKey}
+                            </div>
+                            <div style="font-size: 11px; opacity: 0.85;">Show this 6-digit key or serial number at the diagnostic lab for instant sample collection.</div>
+                        </div>
+                        <div style="background: #ffffff; padding: 6px; border-radius: 6px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=MEDIOS-LAB-${newClaimKey}" alt="QR" style="width: 60px; height: 60px;">
+                        </div>
+                    </div>
+
+                    <!-- Destination Diagnostic Lab -->
+                    <div style="background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #1e40af; text-transform: uppercase;">
+                                <i class="bi bi-geo-alt-fill"></i> Routed to Diagnostic Lab:
+                            </div>
+                            <div style="font-weight: 800; font-size: 13.5px; color: #1e3a8a; margin-top: 2px;">
+                                ${targetLab.name}
+                            </div>
+                            <div style="font-size: 11px; color: #2563eb;">${targetLab.address} • Ph: ${targetLab.phone}</div>
+                        </div>
+                        <span style="font-size: 11px; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 4px 8px; border-radius: 6px;">
+                            ${targetLab.nablCert || 'NABL Accredited'}
+                        </span>
+                    </div>
+
+                    <table class="modern-table" style="font-size: 12px; margin-bottom: 12px;">
+                        <thead>
+                            <tr style="background: #f1f5f9;">
+                                <th>Test Code</th>
+                                <th>Investigation Name</th>
+                                <th>Department</th>
+                                <th>Specimen Type</th>
+                                <th>Price (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${selectedTests.map(t => `
+                                <tr>
+                                    <td><span style="font-family: var(--font-mono); font-weight: 700; color: #4338ca;">${t.code}</span></td>
+                                    <td><b>${t.name}</b></td>
+                                    <td>${t.category}</td>
+                                    <td>${t.sampleType}</td>
+                                    <td><b>₹ ${t.price}</b></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Simulated WhatsApp SMS Notification Card -->
+                <div style="background: #075e54; color: #ffffff; border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 14px rgba(7, 94, 84, 0.25);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-weight: 800; font-size: 12.5px; display: flex; align-items: center; gap: 6px;">
+                            <i class="bi bi-whatsapp" style="color: #25d366; font-size: 17px;"></i> Automated WhatsApp Notification Sent to Patient
+                        </div>
+                        <span style="font-size: 10px; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">Delivered to ${p.phone}</span>
+                    </div>
+                    <div style="background: #ffffff; color: #0f172a; padding: 12px 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; position: relative;">
+                        <div style="font-weight: 800; color: #075e54; margin-bottom: 4px;">Apex Healthcare • Diagnostic Lab Test Order</div>
+                        <div>Dear <b>${p.name}</b>, your diagnostic test order (<b>${testNamesStr}</b>) from <b>${doc.name}</b> has been registered.</div>
+                        <div style="margin: 8px 0; padding: 8px; background: #f0fdf4; border: 1px dashed #22c55e; border-radius: 6px;">
+                            <div>🔑 <b>Unique Claim Key:</b> <span style="font-size: 16px; font-weight: 900; color: #166534; font-family: var(--font-mono);">${newClaimKey}</span></div>
+                            <div>🔖 <b>Serial Number:</b> <b>${newSerialNo}</b></div>
+                            <div>📍 <b>Collection Center:</b> ${targetLab.name} (${targetLab.address})</div>
+                            <div>⚠️ <b>Preparation Note:</b> 8-10 Hours overnight fasting required for fasting glucose/lipid tests.</div>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b;">Show this Key or QR code to the phlebotomist at the lab counter to provide your blood sample.</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        document.getElementById('labOrderDispatchModal').classList.add('active');
+
+        // Audit Log
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: `${doc.name} (EMR Cockpit)`,
+            action: 'LAB_ORDER_LOCKED_AND_ROUTED',
+            entity: `Lab #${newOrderId} • Claim Key ${newClaimKey}`,
+            tenant: MediData.tenant.id,
+            details: `Doctor ordered ${selectedTests.length} tests (${testNamesStr}) for ${p.name}. Routed to ${targetLab.name} with Claim Key #${newClaimKey}. WhatsApp alert dispatched.`,
+            ip: '192.168.1.104'
+        });
+        renderAuditLogs();
+        renderLabWorklist();
+
+        playAudioFx('chime');
+        triggerConfetti();
+        showToast(`Lab Order Locked & Routed to ${targetLab.name}! Claim Key: ${newClaimKey}`, 'success', 'Lab Order Dispatched');
+    };
+
+    window.simulateWhatsAppLabSend = function() {
+        const order = state.lastDispatchedLabOrder || MediData.activeLabWorklist[0];
+        playAudioFx('chime');
+        showToast(`WhatsApp message with Lab Claim Key #${order ? order.claimKey : '894-210'} re-sent to ${order ? order.patientPhone : '+91 98210 44521'}!`, 'success', 'WhatsApp Delivery');
+    };
+
+    // --------------------------------------------------------------------------
+    // 5. PHASE 3: Radiology & X-Ray Imaging Suite (M12, RAD-01 - 06)
+    // --------------------------------------------------------------------------
+    function renderRadiologyWorklist(filteredCenterId = 'all') {
+        const tbody = document.getElementById('radiologyWorklistTableBody');
+        if (!tbody || !MediData.radiologyWorklist) return;
+
+        let list = MediData.radiologyWorklist;
+        if (filteredCenterId && filteredCenterId !== 'all') {
+            list = list.filter(r => r.targetCenterId === filteredCenterId);
+        }
+
+        if (list.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="9" style="text-align: center; padding: 24px; color: var(--text-muted);">
+                        <i class="bi bi-inbox" style="font-size: 24px;"></i>
+                        <div style="margin-top: 6px; font-weight: 600;">No pending radiology scan orders for this imaging centre.</div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = list.map(r => {
+            const isReleased = r.scanStatus && r.scanStatus.includes('Released');
+            const isCompleted = r.scanStatus && r.scanStatus.includes('Completed');
+
+            return `
+                <tr style="${isReleased ? 'opacity: 0.85;' : 'background: rgba(2, 132, 199, 0.02);'}">
+                    <td>
+                        <span style="font-family: var(--font-mono); font-weight: 800; color: #0284c7;">${r.serialNo || r.orderId}</span>
+                        <div style="font-size: 11px; color: var(--text-muted);">${r.orderId} • ${r.orderTime || 'Today'}</div>
+                    </td>
+                    <td>
+                        <div class="rx-claim-key-pill" title="Unique Patient Claim Key" style="background: rgba(2, 132, 199, 0.12); color: #0284c7; font-weight: 900; padding: 4px 10px; border-radius: 6px; font-size: 13px; font-family: var(--font-mono); border: 1px solid rgba(2, 132, 199, 0.3); display: inline-flex; align-items: center; gap: 4px;">
+                            <i class="bi bi-key-fill" style="font-size: 11px;"></i> ${r.claimKey || '412-880'}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">${r.patientName}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">${r.ageSex} • ${r.patientPhone || '+91 98210 44521'}</div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-heading);">${r.scanName}</div>
+                        <span class="badge badge-purple" style="font-size: 10px;">${r.modality} (${r.bodyPart})</span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; font-size: 12px; color: #0369a1;">${r.targetCenterName || 'Apex Central Digital X-Ray Suite'}</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted);"><i class="bi bi-person-badge"></i> ${r.radiologistName}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 11.5px; color: var(--text-secondary); max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${r.clinicalIndication}">
+                            ${r.clinicalIndication || 'Clinical investigation'}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge ${isReleased ? 'badge-green' : isCompleted ? 'badge-blue' : 'badge-amber'}">
+                            ${r.scanStatus}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 900; font-size: 13px; color: var(--text-primary);">₹ ${(r.price || 600).toLocaleString('en-IN')}</div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <button class="btn btn-sm btn-primary" style="background: #0284c7; border-color: #0284c7; font-weight: 700;" onclick="openRadiologyViewerModal('${r.orderId}')">
+                                <i class="bi bi-film"></i> ${isReleased ? 'View Film & Report' : 'Open DICOM & Sign'}
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    window.filterRadiologyOrdersByCenter = function(centerId) {
+        renderRadiologyWorklist(centerId);
+    };
+
+    window.verifyAndClaimRadiologyOrderByKey = function(inputKey = null) {
+        const rawKey = inputKey || (document.getElementById('radiologyClaimKeySearchInput') ? document.getElementById('radiologyClaimKeySearchInput').value : '');
+        const cleanKey = (rawKey || '').replace(/[\s-]/g, '').toLowerCase().trim();
+
+        if (!cleanKey) {
+            showToast('Please enter a Claim Key, Serial Number, or Phone Number.', 'warning', 'Radiology Key Required');
+            return;
+        }
+
+        const foundOrder = MediData.radiologyWorklist.find(o => {
+            const k = (o.claimKey || '').replace(/[\s-]/g, '').toLowerCase();
+            const s = (o.serialNo || '').replace(/[\s-]/g, '').toLowerCase();
+            const r = (o.orderId || '').replace(/[\s-]/g, '').toLowerCase();
+            const p = (o.patientPhone || '').replace(/[\s-]/g, '').toLowerCase();
+            return k === cleanKey || s.includes(cleanKey) || r.includes(cleanKey) || p.includes(cleanKey);
+        });
+
+        if (foundOrder) {
+            playAudioFx('chime');
+            showToast(`Radiology Claim Key Verified! Opening DICOM film for ${foundOrder.patientName}...`, 'success', 'Radiology Order Validated');
+            openRadiologyViewerModal(foundOrder.orderId);
+        } else {
+            playAudioFx('alert');
+            showToast(`No radiology imaging order found matching "${rawKey}". Please check the 6-digit claim key on patient's WhatsApp message.`, 'error', 'Invalid Radiology Key');
+        }
+    };
+
+    window.openRadiologyViewerModal = function(orderId = 'RAD-ORD-8812') {
+        const order = MediData.radiologyWorklist.find(r => r.orderId === orderId) || MediData.radiologyWorklist[0];
+        state.currentViewingRadiologyOrderId = order ? order.orderId : orderId;
+
+        const modal = document.getElementById('radiologyViewerModal');
+        const body = document.getElementById('radiologyViewerModalBody');
+        const title = document.getElementById('dicomViewerModalTitle');
+        const releaseBtn = document.getElementById('releaseRadiologyReportActionBtn');
+
+        if (title && order) {
+            title.innerHTML = `DICOM 3.0 Film Review — ${order.scanName} (${order.patientName})`;
+        }
+
+        if (releaseBtn && order) {
+            const isReleased = order.scanStatus && order.scanStatus.includes('Released');
+            releaseBtn.innerHTML = isReleased 
+                ? `<i class="bi bi-printer-fill"></i> Print AERB Report PDF`
+                : `<i class="bi bi-file-earmark-check-fill"></i> Sign & Release Official Report`;
+            releaseBtn.onclick = isReleased ? () => window.print() : () => verifyAndReleaseRadiologyReport(order.orderId);
+        }
+
+        if (body && order) {
+            body.innerHTML = `
+                <!-- Top DICOM Metadata Bar -->
+                <div style="background: #0f172a; padding: 12px 16px; border-radius: 8px; border: 1px solid #1e293b; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 12px;">
+                    <div>
+                        <div style="font-weight: 800; font-size: 14px; color: #38bdf8;">${order.patientName} <span style="color: #94a3b8; font-size: 12px;">(${order.ageSex})</span></div>
+                        <div style="color: #94a3b8; margin-top: 2px;">MRN: <b>${order.mrn}</b> • Modality: <b>${order.modality}</b> • Region: <b>${order.bodyPart}</b></div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-family: var(--font-mono); color: #38bdf8; font-weight: 900; font-size: 15px;">
+                            <i class="bi bi-key-fill"></i> ${order.claimKey}
+                        </div>
+                        <div style="color: #94a3b8; font-size: 11px;">Serial: <b>${order.serialNo}</b> • Ordered by: <b>${order.orderedBy}</b></div>
+                    </div>
+                </div>
+
+                <div class="grid-2-col" style="grid-template-columns: 1.1fr 1fr; gap: 20px;">
+                    <!-- Left: High-Contrast Realistic DICOM Film Viewer -->
+                    <div style="background: #000000; border: 2px solid #1e293b; border-radius: 10px; padding: 14px; position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center;">
+                        <div style="width: 100%; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; color: #38bdf8; margin-bottom: 8px;">
+                            <span>Apex Digital X-Ray Hub</span>
+                            <span>kVp: 70 | mA: 200 | Exp: 0.08s</span>
+                            <span>PA VIEW (L)</span>
+                        </div>
+
+                        <!-- Film Image Container with Zoom / Invert Simulation -->
+                        <div id="dicomImageWrapper" style="position: relative; width: 100%; height: 380px; display: flex; justify-content: center; align-items: center; background: #000000; overflow: hidden; border-radius: 6px;">
+                            <img id="dicomActiveFilmImg" src="${order.scanImageUrl}" alt="DICOM Film" style="max-height: 100%; max-width: 100%; object-fit: contain; filter: grayscale(100%) contrast(150%) brightness(95%); transition: all 0.3s ease;">
+                            
+                            <!-- Film Scale Markings -->
+                            <div style="position: absolute; right: 8px; top: 10px; bottom: 10px; width: 6px; border-right: 2px dashed rgba(255,255,255,0.3);"></div>
+                            <div style="position: absolute; left: 10px; bottom: 10px; color: #ffffff; font-size: 18px; font-weight: 900; font-family: var(--font-mono); opacity: 0.7;">R</div>
+                        </div>
+
+                        <!-- DICOM Toolbar Simulation -->
+                        <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; width: 100%; justify-content: center;">
+                            <button class="btn btn-xs btn-outline" style="border-color: #334155; color: #94a3b8;" onclick="document.getElementById('dicomActiveFilmImg').style.filter = 'grayscale(100%) invert(100%) contrast(150%)'; showToast('Inverted Film Contrast (Bone Window)');">
+                                <i class="bi bi-circle-half"></i> Invert Film
+                            </button>
+                            <button class="btn btn-xs btn-outline" style="border-color: #334155; color: #94a3b8;" onclick="document.getElementById('dicomActiveFilmImg').style.filter = 'grayscale(100%) contrast(150%) brightness(95%)'; showToast('Reset Standard Film Window');">
+                                <i class="bi bi-arrow-counterclockwise"></i> Reset View
+                            </button>
+                            <button class="btn btn-xs btn-outline" style="border-color: #334155; color: #94a3b8;" onclick="showToast('Zoom & Pan Calibration: 1.0x (Optimal Scale)')">
+                                <i class="bi bi-zoom-in"></i> 100% Zoom
+                            </button>
+                            <button class="btn btn-xs btn-outline" style="border-color: #334155; color: #94a3b8;" onclick="showToast('Measuring Caliper: Cardiothoracic Ratio = 0.44 (Normal < 0.50)')">
+                                <i class="bi bi-rulers"></i> Measure CTR
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Radiologist Clinical Findings & Impression Report Editor -->
+                    <div style="display: flex; flex-direction: column; gap: 12px; background: #0b1329; padding: 16px; border-radius: 10px; border: 1px solid #1e293b;">
+                        <div>
+                            <label class="form-label" style="color: #94a3b8; font-size: 11px; text-transform: uppercase; font-weight: 700;">Clinical Indication & History:</label>
+                            <div style="color: #e2e8f0; font-size: 12.5px; font-weight: 600; background: #0f172a; padding: 8px 12px; border-radius: 6px; border: 1px solid #1e293b;">
+                                ${order.clinicalIndication || 'Persistent cough, rule out lower respiratory pathology.'}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="form-label" style="color: #38bdf8; font-size: 11px; text-transform: uppercase; font-weight: 700;">Radiological Findings / Description:</label>
+                            <textarea id="radiologyFindingsInput" class="form-control" rows="4" style="background: #020617; color: #f8fafc; border-color: #334155; font-size: 12px; line-height: 1.5;">${order.findings}</textarea>
+                        </div>
+
+                        <div>
+                            <label class="form-label" style="color: #10b981; font-size: 11px; text-transform: uppercase; font-weight: 700;">Radiologist Impression / Conclusion:</label>
+                            <textarea id="radiologyImpressionInput" class="form-control" rows="2" style="background: #020617; color: #f8fafc; border-color: #334155; font-size: 12.5px; font-weight: 700;">${order.impression}</textarea>
+                        </div>
+
+                        <div style="background: #0f172a; padding: 12px; border-radius: 6px; border: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center; margin-top: auto;">
+                            <div>
+                                <div style="font-weight: 800; font-size: 13px; color: #38bdf8;">${order.radiologistName}</div>
+                                <div style="font-size: 10.5px; color: #94a3b8;">MD Radiology • AERB Reg #9912</div>
+                            </div>
+                            <span class="badge ${order.scanStatus && order.scanStatus.includes('Released') ? 'badge-green' : 'badge-amber'}" style="font-size: 11px;">
+                                ${order.scanStatus && order.scanStatus.includes('Released') ? '<i class="bi bi-shield-check"></i> Verified & Released' : '<i class="bi bi-clock-history"></i> Ready for Sign-Off'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        modal.classList.add('active');
+    };
+
+    window.verifyAndReleaseRadiologyReport = function(orderId = null) {
+        const activeId = orderId || state.currentViewingRadiologyOrderId || 'RAD-ORD-8812';
+        const order = MediData.radiologyWorklist.find(r => r.orderId === activeId);
+
+        if (order) {
+            const findingsInput = document.getElementById('radiologyFindingsInput');
+            const impressionInput = document.getElementById('radiologyImpressionInput');
+            if (findingsInput) order.findings = findingsInput.value;
+            if (impressionInput) order.impression = impressionInput.value;
+
+            order.scanStatus = 'Verified & Released by Dr. Hemant Joshi';
+        }
+
+        document.getElementById('radiologyViewerModal').classList.remove('active');
+        renderRadiologyWorklist();
+
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: `Dr. Hemant Joshi (Chief Radiologist)`,
+            action: 'RADIOLOGY_REPORT_AUTHORIZED_RELEASED',
+            entity: `Scan #${order ? order.orderId : 'RAD-ORD-8812'} • Claim #${order ? order.claimKey : '412-880'}`,
+            tenant: MediData.tenant.id,
+            details: `Digitally reviewed DICOM film and authorized AERB diagnostic imaging report for ${order ? order.patientName : 'patient'} (${order ? order.scanName : 'X-Ray'}). Report pushed to patient portal.`,
+            ip: '192.168.1.110'
+        });
+        renderAuditLogs();
+
+        playAudioFx('success');
+        triggerConfetti();
+        showToast(`Radiology Report #${activeId} Authorized & Released by Chief Radiologist!`, 'success', 'AERB Imaging Report Released');
+    };
+
+    // --------------------------------------------------------------------------
+    // Doctor Lock, Sign & Radiology Centre Router (M12)
+    // --------------------------------------------------------------------------
+    window.lockSignAndRouteRadiologyOrder = function() {
+        const p = MediData.patients.find(x => x.id === state.currentPatientId) || MediData.patients[0];
+        const doc = MediData.currentUser;
+        const targetRadId = document.getElementById('emrTargetRadiologySelect') ? document.getElementById('emrTargetRadiologySelect').value : 'RAD-CTR-01';
+        const targetRadCenter = MediData.partnerRadiologyCenters.find(r => r.id === targetRadId) || MediData.partnerRadiologyCenters[0];
+
+        const selectedRadCodes = state.activeEncounter.radiologyOrders && state.activeEncounter.radiologyOrders.length > 0 ? state.activeEncounter.radiologyOrders : ['RAD-01'];
+        const selectedScan = MediData.radiologyCatalogDetailed.find(r => r.code === selectedRadCodes[0]) || MediData.radiologyCatalogDetailed[0];
+
+        const newOrderId = `RAD-ORD-${Math.floor(8820 + Math.random() * 50)}`;
+        const newSerialNo = `RAD-SRL-2026-0${MediData.radiologyWorklist.length + 1}`;
+        const rand1 = Math.floor(100 + Math.random() * 900);
+        const rand2 = Math.floor(100 + Math.random() * 900);
+        const newClaimKey = `${rand1}-${rand2}`;
+
+        const newRadiologyOrder = {
+            orderId: newOrderId,
+            serialNo: newSerialNo,
+            claimKey: newClaimKey,
+            patientId: p.id,
+            patientName: p.name,
+            patientPhone: p.phone,
+            mrn: p.mrn,
+            ageSex: `${p.age} Y / ${p.gender.charAt(0)}`,
+            modality: selectedScan.modality,
+            scanCode: selectedScan.code,
+            scanName: selectedScan.name,
+            bodyPart: selectedScan.bodyPart,
+            clinicalIndication: "Doctor Consultation: Clinical evaluation & diagnostic imaging protocol.",
+            orderedBy: doc.name,
+            targetCenterId: targetRadCenter.id,
+            targetCenterName: targetRadCenter.name,
+            orderTime: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) + ', Today',
+            scanStatus: "Scheduled / Ready for Scan",
+            radiologistName: targetRadCenter.radiologist,
+            scanImageUrl: selectedScan.sampleImageUrl,
+            findings: "Bilateral lung fields clear. Normal bronchovascular markings. Normal cardiac contour.",
+            impression: "NORMAL RADIOLOGICAL STUDY. No focal acute lesions identified.",
+            price: selectedScan.price
+        };
+
+        MediData.radiologyWorklist.unshift(newRadiologyOrder);
+        state.lastDispatchedRadiologyOrder = newRadiologyOrder;
+
+        // Render Modal Body
+        const modalBody = document.getElementById('radiologyDispatchModalBody');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <!-- Digital Radiology Requisition Certificate -->
+                <div class="printable-document" style="border: 1px solid var(--border-subtle); border-radius: 12px; padding: 20px; background: #ffffff; color: #0f172a; margin-bottom: 20px;">
+                    <div class="doc-hospital-header" style="display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 12px;">
+                        <div>
+                            <div style="font-size: 16px; font-weight: 800; color: #0284c7;">${MediData.tenant.name} — Radiology & Imaging Requisition</div>
+                            <div style="font-size: 11px; color: #64748b;">${MediData.tenant.address} • Phone: ${MediData.tenant.phone}</div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 800; color: #0f172a;">${doc.name}</div>
+                            <div style="font-size: 11px; color: #64748b;">${doc.qualification} • Reg: <b>${doc.regNo}</b></div>
+                        </div>
+                    </div>
+
+                    <div style="background: #f8fafc; padding: 10px 14px; border-radius: 6px; font-size: 12px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; border: 1px solid #e2e8f0;">
+                        <div><b>Patient:</b> ${p.name} (${p.age} Yrs / ${p.gender})</div>
+                        <div><b>MRN:</b> ${p.mrn} • ABHA: ${p.abhaId}</div>
+                        <div><b>Scan Order ID:</b> ${newOrderId}</div>
+                        <div><b>Serial Number:</b> <span style="font-family: var(--font-mono); font-weight: 800; color: #0284c7;">${newSerialNo}</span></div>
+                    </div>
+
+                    <!-- Unique Claim Key Highlight Box -->
+                    <div style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; padding: 14px 18px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <div>
+                            <div style="font-size: 10.5px; text-transform: uppercase; font-weight: 800; opacity: 0.9;">PATIENT RADIOLOGY CLAIM KEY (OTP)</div>
+                            <div style="font-size: 26px; font-weight: 900; font-family: var(--font-mono); letter-spacing: 0.05em; margin-top: 2px;">
+                                <i class="bi bi-key-fill"></i> ${newClaimKey}
+                            </div>
+                            <div style="font-size: 11px; opacity: 0.85;">Show this 6-digit key or serial number at the scan counter to undergo your imaging test instantly.</div>
+                        </div>
+                        <div style="background: #ffffff; padding: 6px; border-radius: 6px;">
+                            <img src="https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=MEDIOS-RAD-${newClaimKey}" alt="QR" style="width: 60px; height: 60px;">
+                        </div>
+                    </div>
+
+                    <!-- Destination Imaging Centre -->
+                    <div style="background: #f0f9ff; border: 1px solid #7dd3fc; border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: #0369a1; text-transform: uppercase;">
+                                <i class="bi bi-geo-alt-fill"></i> Routed to Imaging Scan Centre:
+                            </div>
+                            <div style="font-weight: 800; font-size: 13.5px; color: #0c4a6e; margin-top: 2px;">
+                                ${targetRadCenter.name}
+                            </div>
+                            <div style="font-size: 11px; color: #0284c7;">${targetRadCenter.address} • Ph: ${targetRadCenter.phone}</div>
+                        </div>
+                        <span style="font-size: 11px; font-weight: 700; color: #0369a1; background: #e0f2fe; padding: 4px 8px; border-radius: 6px;">
+                            ${targetRadCenter.aerbCert || 'AERB Certified'}
+                        </span>
+                    </div>
+
+                    <table class="modern-table" style="font-size: 12px; margin-bottom: 12px;">
+                        <thead>
+                            <tr style="background: #f1f5f9;">
+                                <th>Modality</th>
+                                <th>Scan Description</th>
+                                <th>Body Region</th>
+                                <th>Scan Prep Instructions</th>
+                                <th>Price (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge badge-purple" style="font-weight: 700;">${selectedScan.modality}</span></td>
+                                <td><b>${selectedScan.name}</b></td>
+                                <td>${selectedScan.bodyPart}</td>
+                                <td style="color: #475569; font-size: 11.5px;">${selectedScan.prepInstructions || 'Remove metal ornaments.'}</td>
+                                <td><b>₹ ${selectedScan.price}</b></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Simulated WhatsApp SMS Notification Card -->
+                <div style="background: #075e54; color: #ffffff; border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 14px rgba(7, 94, 84, 0.25);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <div style="font-weight: 800; font-size: 12.5px; display: flex; align-items: center; gap: 6px;">
+                            <i class="bi bi-whatsapp" style="color: #25d366; font-size: 17px;"></i> Automated WhatsApp Notification Sent to Patient
+                        </div>
+                        <span style="font-size: 10px; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 4px;">Delivered to ${p.phone}</span>
+                    </div>
+                    <div style="background: #ffffff; color: #0f172a; padding: 12px 14px; border-radius: 8px; font-size: 12px; line-height: 1.5; position: relative;">
+                        <div style="font-weight: 800; color: #075e54; margin-bottom: 4px;">Apex Healthcare • Radiology & Imaging Order</div>
+                        <div>Dear <b>${p.name}</b>, your scan appointment for <b>${selectedScan.name}</b> has been booked by <b>${doc.name}</b>.</div>
+                        <div style="margin: 8px 0; padding: 8px; background: #f0fdf4; border: 1px dashed #22c55e; border-radius: 6px;">
+                            <div>🔑 <b>Unique Claim Key:</b> <span style="font-size: 16px; font-weight: 900; color: #166534; font-family: var(--font-mono);">${newClaimKey}</span></div>
+                            <div>🔖 <b>Serial Number:</b> <b>${newSerialNo}</b></div>
+                            <div>📍 <b>Scan Center:</b> ${targetRadCenter.name} (${targetRadCenter.address})</div>
+                            <div>⚠️ <b>Scan Preparation:</b> ${selectedScan.prepInstructions || 'Please arrive 15 minutes before slot with previous reports.'}</div>
+                        </div>
+                        <div style="font-size: 11px; color: #64748b;">Show this Key or QR code at the radiology reception desk to claim your scan slot immediately. Total Charge: ₹${selectedScan.price}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        document.getElementById('radiologyDispatchModal').classList.add('active');
+
+        // Audit Log
+        MediData.auditLogs.unshift({
+            id: `AUD-${Math.floor(1000 + Math.random() * 9000)}`,
+            time: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            actor: `${doc.name} (EMR Cockpit)`,
+            action: 'RADIOLOGY_ORDER_LOCKED_AND_ROUTED',
+            entity: `Scan #${newOrderId} • Claim Key ${newClaimKey}`,
+            tenant: MediData.tenant.id,
+            details: `Doctor prescribed ${selectedScan.name} to ${p.name}. Auto-routed to ${targetRadCenter.name} with Claim Key #${newClaimKey}. WhatsApp alert dispatched to ${p.phone}.`,
+            ip: '192.168.1.104'
+        });
+        renderAuditLogs();
+        renderRadiologyWorklist();
+
+        playAudioFx('chime');
+        triggerConfetti();
+        showToast(`Radiology Order Locked & Routed to ${targetRadCenter.name}! Claim Key: ${newClaimKey}`, 'success', 'Radiology Order Dispatched');
+    };
+
+    window.simulateWhatsAppRadiologySend = function() {
+        const order = state.lastDispatchedRadiologyOrder || MediData.radiologyWorklist[0];
+        playAudioFx('chime');
+        showToast(`WhatsApp message with Radiology Claim Key #${order ? order.claimKey : '412-880'} re-sent to ${order ? order.patientPhone : '+91 98210 44521'}!`, 'success', 'WhatsApp Delivery');
+    };
+
+    window.openRadiologyQrScannerModal = function() {
+        document.getElementById('radiologyQrScannerModal').classList.add('active');
+    };
+
+    window.submitSimulatedRadiologyQrScan = function() {
+        const scannedKey = document.getElementById('simulatedRadiologyScanKeyInput').value || '412-880';
+        document.getElementById('radiologyQrScannerModal').classList.remove('active');
+        verifyAndClaimRadiologyOrderByKey(scannedKey);
+    };
 
     window.openLabResultEntryModal = function(orderId) {
         document.getElementById('labResultEntryModal').classList.add('active');
@@ -1122,7 +1898,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --------------------------------------------------------------------------
-    // 5. PHASE 3: Doctor Revenue Share Statements (OPS-01)
+    // 6. PHASE 3: Doctor Revenue Share Statements (OPS-01)
     // --------------------------------------------------------------------------
     function renderDoctorPayouts() {
         const tbody = document.getElementById('doctorPayoutsTableBody');
@@ -3298,11 +4074,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (emrMrn) emrMrn.innerText = `${p.mrn} • ABHA: ${p.abhaId}`;
 
         const labGrid = document.getElementById('emrLabOrdersGrid');
-        if (labGrid) {
-            labGrid.innerHTML = MediData.labOrdersCatalog.map(lab => {
-                const isChecked = state.activeEncounter.labOrders.includes(lab.code);
+        if (labGrid && MediData.labTestsCatalogDetailed) {
+            labGrid.innerHTML = MediData.labTestsCatalogDetailed.map(lab => {
+                const isChecked = (state.activeEncounter.labOrders || []).includes(lab.code);
                 return `
-                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 6px 10px; background: var(--bg-main); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer;">
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 6px 10px; background: var(--bg-main); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; flex: 1; min-width: 220px;">
                         <input type="checkbox" value="${lab.code}" ${isChecked ? 'checked' : ''} onchange="toggleLabOrder('${lab.code}')">
                         <span style="font-weight: 600;">${lab.name}</span>
                         <span style="margin-left: auto; color: var(--primary-600); font-size: 11px; font-weight: 700;">₹${lab.price}</span>
@@ -3311,8 +4087,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
         }
 
+        const radGrid = document.getElementById('emrRadiologyOrdersGrid');
+        if (radGrid && MediData.radiologyCatalogDetailed) {
+            if (!state.activeEncounter.radiologyOrders) state.activeEncounter.radiologyOrders = ['RAD-01'];
+            radGrid.innerHTML = MediData.radiologyCatalogDetailed.map(rad => {
+                const isChecked = state.activeEncounter.radiologyOrders.includes(rad.code);
+                return `
+                    <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 6px 10px; background: var(--bg-main); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); cursor: pointer; flex: 1; min-width: 220px;">
+                        <input type="checkbox" value="${rad.code}" ${isChecked ? 'checked' : ''} onchange="toggleRadiologyOrder('${rad.code}')">
+                        <div>
+                            <div style="font-weight: 600; font-size: 12px;">${rad.name}</div>
+                            <div style="font-size: 10.5px; color: var(--text-muted);">${rad.modality} • ${rad.bodyPart}</div>
+                        </div>
+                        <span style="margin-left: auto; color: #0284c7; font-size: 11px; font-weight: 700;">₹${rad.price}</span>
+                    </label>
+                `;
+            }).join('');
+        }
+
         renderPrescriptionItems();
     }
+
+    window.toggleRadiologyOrder = function(code) {
+        if (!state.activeEncounter.radiologyOrders) state.activeEncounter.radiologyOrders = [];
+        const idx = state.activeEncounter.radiologyOrders.indexOf(code);
+        if (idx > -1) state.activeEncounter.radiologyOrders.splice(idx, 1);
+        else state.activeEncounter.radiologyOrders.push(code);
+        showToast('Updated Radiology & Imaging Orders');
+    };
 
     function renderPrescriptionItems() {
         const rxList = document.getElementById('emrRxItemsList');

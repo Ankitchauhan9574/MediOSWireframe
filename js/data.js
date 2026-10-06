@@ -833,6 +833,26 @@ const MediData = {
     ],
 
     // =========================================================================
+    // PARTNER PATHOLOGY LABS DIRECTORY
+    // =========================================================================
+    partnerPathologyLabs: [
+        { id: "LAB-CTR-01", name: "Apex Central Pathology & NABL Lab", branch: "Main Campus (1st Floor)", nablCert: "NABL-MC-2024-8841", phone: "+91 (022) 2847-9008", address: "1st Floor, Apex Healthcare, Bandra West, Mumbai", director: "Dr. Meera Kulkarni (MD Path)", isInHouse: true },
+        { id: "LAB-CTR-02", name: "Dr. Lal PathLabs (Bandra West)", branch: "Station Road Diagnostic Center", nablCert: "NABL-DL-2023-1102", phone: "+91 98200 99401", address: "Shop 12, Station Road, Bandra West, Mumbai", director: "Dr. Sandeep Verma", isInHouse: false },
+        { id: "LAB-CTR-03", name: "Metropolis Healthcare Diagnostics", branch: "Pali Hill Collection Hub", nablCert: "NABL-MH-2022-4419", phone: "+91 98700 88219", address: "Plot 24, Pali Hill, Bandra West, Mumbai", director: "Dr. Rohit Shah", isInHouse: false },
+        { id: "LAB-CTR-04", name: "Thyrocare Technologies Processing Hub", branch: "SV Road Central", nablCert: "NABL-TH-2024-9041", phone: "+91 98330 11920", address: "SV Road, Khar West, Mumbai", director: "Dr. A. Velumani", isInHouse: false }
+    ],
+
+    // =========================================================================
+    // PARTNER RADIOLOGY & IMAGING CENTRES DIRECTORY
+    // =========================================================================
+    partnerRadiologyCenters: [
+        { id: "RAD-CTR-01", name: "Apex Central Digital X-Ray & Imaging Suite", branch: "Main Campus (Ground Floor)", aerbCert: "AERB-RAD-2024-9912", phone: "+91 (022) 2847-9009", address: "Ground Floor (Room 101), Apex Healthcare, Bandra West", radiologist: "Dr. Hemant Joshi (MD Radiology)", modalities: ["Digital X-Ray", "USG / Sonography", "2D Echo", "ECG"], isInHouse: true },
+        { id: "RAD-CTR-02", name: "Mahajan Imaging & Diagnostic Scan Centre", branch: "Bandra West Hub", aerbCert: "AERB-MH-2023-4412", phone: "+91 98200 77102", address: "Opp. Turner Road, Bandra West, Mumbai", radiologist: "Dr. Harsh Mahajan", modalities: ["Digital X-Ray", "3T MRI", "128-Slice CT", "USG"], isInHouse: false },
+        { id: "RAD-CTR-03", name: "Suburban Diagnostics MRI & CT Hub", branch: "Linking Road Wing", aerbCert: "AERB-SB-2022-7719", phone: "+91 98700 33419", address: "Linking Road, Khar West, Mumbai", radiologist: "Dr. Sanjay Arora", modalities: ["MRI", "CT Scan", "Digital X-Ray", "Mammography"], isInHouse: false },
+        { id: "RAD-CTR-04", name: "NM Medical Radiology & Ultrasound Center", branch: "Santacruz West Annex", aerbCert: "AERB-NM-2024-5510", phone: "+91 98330 99412", address: "SV Road, Santacruz West, Mumbai", radiologist: "Dr. Nilesh Shah", modalities: ["4D Sonography", "Digital X-Ray", "DEXA Bone Scan"], isInHouse: false }
+    ],
+
+    // =========================================================================
     // PHASE 3: LABORATORY TEST MASTER & ORDERS WORKLIST (M11, LAB-01 - LAB-07)
     // =========================================================================
     labTestsCatalogDetailed: [
@@ -903,18 +923,92 @@ const MediData = {
         }
     ],
 
+    // =========================================================================
+    // RADIOLOGY & IMAGING INVESTIGATION CATALOG
+    // =========================================================================
+    radiologyCatalogDetailed: [
+        {
+            code: "RAD-01",
+            name: "Digital Chest X-Ray (PA View)",
+            modality: "Digital X-Ray",
+            bodyPart: "Chest & Lungs",
+            price: 600,
+            tat: "1 Hour",
+            prepInstructions: "Remove all metallic ornaments, necklaces, and bra with metal underwires.",
+            sampleImageUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400&auto=format&fit=crop&q=80"
+        },
+        {
+            code: "RAD-02",
+            name: "Lumbar Spine X-Ray (AP & Lateral)",
+            modality: "Digital X-Ray",
+            bodyPart: "Lumbo-Sacral Spine",
+            price: 900,
+            tat: "1 Hour",
+            prepInstructions: "Wear comfortable hospital gown provided in scan changing room.",
+            sampleImageUrl: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=400&auto=format&fit=crop&q=80"
+        },
+        {
+            code: "RAD-03",
+            name: "Ultrasound Whole Abdomen & Pelvis (USG)",
+            modality: "Ultrasound / Sonography",
+            bodyPart: "Abdomen & Pelvic Organs",
+            price: 1400,
+            tat: "2 Hours",
+            prepInstructions: "6 to 8 hours overnight fasting required. Full urinary bladder needed before scan.",
+            sampleImageUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=400&auto=format&fit=crop&q=80"
+        },
+        {
+            code: "RAD-04",
+            name: "2D Echocardiography with Color Doppler",
+            modality: "Cardiac Echo",
+            bodyPart: "Heart Chambers & Valves",
+            price: 2200,
+            tat: "2 Hours",
+            prepInstructions: "No special fasting required. Bring previous ECG/Echo reports.",
+            sampleImageUrl: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=400&auto=format&fit=crop&q=80"
+        },
+        {
+            code: "RAD-05",
+            name: "Brain CT Scan (High-Resolution)",
+            modality: "CT Scan",
+            bodyPart: "Brain & Cranium",
+            price: 3200,
+            tat: "3 Hours",
+            prepInstructions: "4 hours fasting if contrast dye is advised by radiologist.",
+            sampleImageUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=400&auto=format&fit=crop&q=80"
+        },
+        {
+            code: "RAD-06",
+            name: "Right / Left Knee MRI Scan",
+            modality: "3T MRI",
+            bodyPart: "Knee Joint & Ligaments",
+            price: 5500,
+            tat: "4 Hours",
+            prepInstructions: "Inform if you have pacemaker, metal implants, or surgical clips.",
+            sampleImageUrl: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=400&auto=format&fit=crop&q=80"
+        }
+    ],
+
+    // =========================================================================
+    // ACTIVE PATHOLOGY LAB WORKLIST (WITH CLAIM KEYS)
+    // =========================================================================
     activeLabWorklist: [
         {
             orderId: "LAB-ORD-9941",
+            serialNo: "LAB-SRL-8849-01",
+            claimKey: "894-210",
             sampleBarcode: "SAM-8849102",
             patientId: "PAT-2026-0101",
             patientName: "Vikramaditya Verma",
+            patientPhone: "+91 98210 44521",
             mrn: "MRN-90142",
             ageSex: "48 Y / M",
             testCode: "LAB-01",
             testName: "HbA1c & Fasting Glucose Screening",
             category: "Biochemistry",
             orderedBy: "Dr. Rajeshwar Sharma",
+            targetLabId: "LAB-CTR-01",
+            targetLabName: "Apex Central Pathology & NABL Lab",
             orderTime: "Today, 09:40 AM",
             sampleStatus: "Sample Collected", // Ordered, Sample Collected, Processing, Pending Verification, Released
             collectedBy: "Phlebotomist Ramesh K.",
@@ -925,15 +1019,20 @@ const MediData = {
         },
         {
             orderId: "LAB-ORD-9942",
+            serialNo: "LAB-SRL-8849-02",
+            claimKey: "419-882",
             sampleBarcode: "SAM-8849103",
             patientId: "PAT-2026-0102",
             patientName: "Sunita Deshpande",
+            patientPhone: "+91 97690 12890",
             mrn: "MRN-90143",
             ageSex: "34 Y / F",
             testCode: "LAB-06",
             testName: "Thyroid Profile Total (T3, T4, TSH)",
             category: "Endocrinology",
             orderedBy: "Dr. Rajeshwar Sharma",
+            targetLabId: "LAB-CTR-02",
+            targetLabName: "Dr. Lal PathLabs (Bandra West)",
             orderTime: "Today, 10:05 AM",
             sampleStatus: "Released",
             collectedBy: "Phlebotomist Ramesh K.",
@@ -944,22 +1043,83 @@ const MediData = {
         },
         {
             orderId: "LAB-ORD-9943",
+            serialNo: "LAB-SRL-8849-03",
+            claimKey: "551-923",
             sampleBarcode: "SAM-8849104",
             patientId: "PAT-2026-0105",
             patientName: "Kabir Khan",
+            patientPhone: "+91 98700 33211",
             mrn: "MRN-90146",
             ageSex: "29 Y / M",
             testCode: "LAB-03",
             testName: "Complete Blood Count (CBC) with ESR",
             category: "Hematology",
             orderedBy: "Dr. Rajeshwar Sharma",
+            targetLabId: "LAB-CTR-01",
+            targetLabName: "Apex Central Pathology & NABL Lab",
             orderTime: "Today, 10:20 AM",
             sampleStatus: "Processing",
             collectedBy: "Phlebotomist Anita S.",
             sampleTime: "10:25 AM",
             criticalAlert: false,
             resultEntered: false,
-            verificationStatus: "Under Analysis (Sysmex XN-350)"
+            verificationStatus: "In Analyzer (Cell-Dyn 3800)"
+        }
+    ],
+
+    // =========================================================================
+    // ACTIVE RADIOLOGY & X-RAY INVESTIGATION WORKLIST (WITH CLAIM KEYS)
+    // =========================================================================
+    radiologyWorklist: [
+        {
+            orderId: "RAD-ORD-8812",
+            serialNo: "RAD-SRL-2026-01",
+            claimKey: "412-880",
+            patientId: "PAT-2026-0101",
+            patientName: "Vikramaditya Verma",
+            patientPhone: "+91 98210 44521",
+            mrn: "MRN-90142",
+            ageSex: "48 Y / M",
+            modality: "Digital X-Ray",
+            scanCode: "RAD-01",
+            scanName: "Digital Chest X-Ray (PA View)",
+            bodyPart: "Chest & Lungs",
+            clinicalIndication: "Persistent morning cough, rule out lower respiratory congestion.",
+            orderedBy: "Dr. Rajeshwar Sharma",
+            targetCenterId: "RAD-CTR-01",
+            targetCenterName: "Apex Central Digital X-Ray Suite (Ground Floor)",
+            orderTime: "Today, 09:45 AM",
+            scanStatus: "Scan Completed", // Ordered / Scheduled, Scan Completed, Radiologist Review, Released
+            radiologistName: "Dr. Hemant Joshi (MD Radiology)",
+            scanImageUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=500&auto=format&fit=crop&q=80",
+            findings: "Bilateral lung fields appear clear. Broncho-vascular markings are within normal biological limits. Costophrenic and cardiophrenic angles are clear. Cardiac silhouette is normal in size and contour. No pleural effusion or pneumothorax.",
+            impression: "NORMAL STUDY. No active focal pulmonary parenchymal lesion.",
+            price: 600
+        },
+        {
+            orderId: "RAD-ORD-8814",
+            serialNo: "RAD-SRL-2026-02",
+            claimKey: "782-105",
+            patientId: "PAT-2026-0102",
+            patientName: "Sunita Deshpande",
+            patientPhone: "+91 97690 12890",
+            mrn: "MRN-90143",
+            ageSex: "34 Y / F",
+            modality: "Ultrasound / USG",
+            scanCode: "RAD-03",
+            scanName: "Ultrasound Whole Abdomen & Pelvis (USG)",
+            bodyPart: "Whole Abdomen & Pelvis",
+            clinicalIndication: "Epigastric discomfort and thyroid follow-up evaluation.",
+            orderedBy: "Dr. Rajeshwar Sharma",
+            targetCenterId: "RAD-CTR-01",
+            targetCenterName: "Apex Central Digital X-Ray Suite (Ground Floor)",
+            orderTime: "Today, 10:10 AM",
+            scanStatus: "Ready for Scan",
+            radiologistName: "Dr. Hemant Joshi (MD Radiology)",
+            scanImageUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&auto=format&fit=crop&q=80",
+            findings: "Liver is normal in size (13.2 cm) with normal parenchymal echotexture. Gall bladder is well distended, lumen is clear without calculi. Bilateral kidneys are normal in size, shape and position.",
+            impression: "NORMAL USG STUDY OF WHOLE ABDOMEN.",
+            price: 1400
         }
     ],
 

@@ -100,6 +100,12 @@
                 <span class="nav-badge pulse-red">3 Active</span>
             </div>
 
+            <div class="nav-item" data-view="radiology">
+                <i class="bi bi-radioactive"></i>
+                <span>Radiology & X-Ray</span>
+                <span class="nav-badge" style="background: rgba(14, 165, 233, 0.2); color: #0284c7; font-weight: 800;">DICOM</span>
+            </div>
+
             <div class="nav-item" data-view="payouts">
                 <i class="bi bi-calculator-fill"></i>
                 <span>Doctor Revenue Share</span>
@@ -553,21 +559,45 @@
                         <div>
                             <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Laboratory Director</div>
                             <div style="font-size: 13.5px; font-weight: 800; color: var(--primary-600);">Dr. Meera Kulkarni</div>
-                            <div style="font-size: 10.5px; color: var(--text-muted);">MD Pathology (MMC-2010)</div>
+                            <div style="font-size: 10.5px; color: var(--text-muted);">MD Pathology • NABL Signatory</div>
                         </div>
                         <i class="bi bi-award-fill" style="font-size: 28px; color: var(--indigo-500);"></i>
                     </div>
                 </div>
 
-                <!-- Lab Active Worklist -->
-                <div class="card">
-                    <div class="card-header">
+                <!-- Lab Active Worklist Card -->
+                <div class="card" style="margin-bottom: 20px; border-top: 3px solid var(--primary-600);">
+                    <div class="card-header" style="flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
                         <div>
-                            <h3 class="card-title"><i class="bi bi-clipboard2-pulse-fill" style="color: var(--primary-600);"></i> Pathology & Radiology Active Worklist</h3>
-                            <p class="card-subtitle">Sample Barcode tracking, Result Entry and Maker-Checker Verification Desk</p>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3 class="card-title"><i class="bi bi-eyedropper" style="color: var(--primary-600);"></i> Live Pathology Lab Orders & Sample Collection Desk</h3>
+                                <span class="badge badge-green"><i class="bi bi-broadcast"></i> Live Queue</span>
+                            </div>
+                            <p class="card-subtitle">Verify patient sample collection using Unique 6-Digit Claim Key or Barcode, enter analyzer results and sign NABL report</p>
                         </div>
-                        <button class="btn btn-outline btn-sm" onclick="renderLabWorklist()">
-                            <i class="bi bi-arrow-clockwise"></i> Refresh Worklist
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 700;">Active Diagnostic Lab:</span>
+                            <select class="form-control" id="activeLabDeskFilter" style="width: auto; font-size: 12px; font-weight: 700; padding: 6px 12px;" onchange="filterLabOrdersByCenter(this.value)">
+                                <option value="all">All Connected Diagnostic Labs</option>
+                                <option value="LAB-CTR-01" selected>Apex Central Pathology & NABL Lab (Main Campus)</option>
+                                <option value="LAB-CTR-02">Dr. Lal PathLabs (Bandra West)</option>
+                                <option value="LAB-CTR-03">Metropolis Healthcare (Pali Hill)</option>
+                                <option value="LAB-CTR-04">Thyrocare Processing Hub (SV Road)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Quick Claim Key Search Bar -->
+                    <div style="padding: 16px 20px; background: var(--bg-main); border-bottom: 1px solid var(--border-subtle); display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                        <div style="position: relative; flex: 1; min-width: 280px;">
+                            <i class="bi bi-key-fill" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--primary-600); font-size: 16px;"></i>
+                            <input type="text" id="labClaimKeySearchInput" class="form-control" style="padding-left: 38px; font-weight: 700; height: 42px; font-size: 13.5px;" placeholder="Enter Unique 6-Digit Lab Key (e.g. 894-210), Serial No (e.g. LAB-SRL-8849-01), or Phone..." onkeypress="if(event.key === 'Enter') verifyAndClaimLabOrderByKey()">
+                        </div>
+                        <button class="btn btn-primary" style="height: 42px; font-weight: 800; padding: 0 18px;" onclick="verifyAndClaimLabOrderByKey()">
+                            <i class="bi bi-shield-check"></i> Verify Key & Collect Sample
+                        </button>
+                        <button class="btn btn-outline" style="height: 42px;" onclick="openLabQrScannerModal()">
+                            <i class="bi bi-qr-code-scan"></i> Scan Patient QR
                         </button>
                     </div>
 
@@ -575,17 +605,119 @@
                         <table class="modern-table">
                             <thead>
                                 <tr>
-                                    <th>Sample Barcode & Order</th>
+                                    <th>Serial & Order ID</th>
+                                    <th>Unique Claim Key</th>
                                     <th>Patient Details</th>
                                     <th>Test Requested</th>
-                                    <th>Category & Tube Top</th>
+                                    <th>Target Pathology Lab</th>
+                                    <th>Category & Specimen Tube</th>
                                     <th>Sample Status</th>
-                                    <th>Verification State</th>
+                                    <th>Maker-Checker Verification</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="labWorklistTableBody">
-                                <!-- Populated dynamically -->
+                                <!-- Populated dynamically via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- ==================================================================
+                 PHASE 3 VIEW 3: RADIOLOGY, X-RAY & IMAGING SUITE (M12, RAD-01 - 06)
+                 ================================================================== -->
+            <section class="view-section" id="view-radiology">
+                <!-- Radiology Overview Bar -->
+                <div class="queue-summary-bar">
+                    <div class="queue-metric-box">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Total Scans Today</div>
+                            <div style="font-size: 22px; font-weight: 800; color: var(--text-primary);">18 Scans</div>
+                        </div>
+                        <i class="bi bi-radioactive" style="font-size: 28px; color: #0284c7;"></i>
+                    </div>
+
+                    <div class="queue-metric-box">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: var(--amber-600); text-transform: uppercase;">Pending Radiologist Sign</div>
+                            <div style="font-size: 22px; font-weight: 800; color: var(--amber-600);">1 Ready Review</div>
+                        </div>
+                        <i class="bi bi-person-video2" style="font-size: 28px; color: var(--amber-500);"></i>
+                    </div>
+
+                    <div class="queue-metric-box">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: var(--emerald-600); text-transform: uppercase;">Reports Signed & Released</div>
+                            <div style="font-size: 22px; font-weight: 800; color: var(--emerald-600);">17 Released</div>
+                        </div>
+                        <i class="bi bi-file-earmark-check-fill" style="font-size: 28px; color: var(--emerald-500);"></i>
+                    </div>
+
+                    <div class="queue-metric-box">
+                        <div>
+                            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Chief Radiologist (AERB)</div>
+                            <div style="font-size: 13.5px; font-weight: 800; color: #0284c7;">Dr. Hemant Joshi</div>
+                            <div style="font-size: 10.5px; color: var(--text-muted);">MD Radiology • Reg #AERB-9912</div>
+                        </div>
+                        <i class="bi bi-shield-check" style="font-size: 28px; color: var(--teal-600);"></i>
+                    </div>
+                </div>
+
+                <!-- Radiology Worklist Card -->
+                <div class="card" style="margin-bottom: 20px; border-top: 3px solid #0284c7;">
+                    <div class="card-header" style="flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <h3 class="card-title"><i class="bi bi-film" style="color: #0284c7;"></i> Live Radiology, Digital X-Ray & Imaging Queue</h3>
+                                <span class="badge badge-purple"><i class="bi bi-broadcast"></i> DICOM Integrated</span>
+                            </div>
+                            <p class="card-subtitle">Claim imaging orders via 6-digit key, execute scan, review high-resolution DICOM films & release AERB reports</p>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 700;">Active Imaging Centre:</span>
+                            <select class="form-control" id="activeRadiologyCenterFilter" style="width: auto; font-size: 12px; font-weight: 700; padding: 6px 12px;" onchange="filterRadiologyOrdersByCenter(this.value)">
+                                <option value="all">All Connected Imaging Centres</option>
+                                <option value="RAD-CTR-01" selected>Apex Central Digital X-Ray & Imaging Suite (Ground Floor)</option>
+                                <option value="RAD-CTR-02">Mahajan Imaging & Diagnostic Scan Centre (Bandra Hub)</option>
+                                <option value="RAD-CTR-03">Suburban Diagnostics MRI & CT Hub (Linking Road)</option>
+                                <option value="RAD-CTR-04">NM Medical Radiology & Ultrasound Center (Santacruz)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Quick Claim Key Search Bar -->
+                    <div style="padding: 16px 20px; background: var(--bg-main); border-bottom: 1px solid var(--border-subtle); display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                        <div style="position: relative; flex: 1; min-width: 280px;">
+                            <i class="bi bi-key-fill" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #0284c7; font-size: 16px;"></i>
+                            <input type="text" id="radiologyClaimKeySearchInput" class="form-control" style="padding-left: 38px; font-weight: 700; height: 42px; font-size: 13.5px;" placeholder="Enter Unique 6-Digit Radiology Key (e.g. 412-880), Serial No (e.g. RAD-SRL-2026-01), or Phone..." onkeypress="if(event.key === 'Enter') verifyAndClaimRadiologyOrderByKey()">
+                        </div>
+                        <button class="btn btn-primary" style="height: 42px; font-weight: 800; padding: 0 18px; background: #0284c7; border-color: #0284c7;" onclick="verifyAndClaimRadiologyOrderByKey()">
+                            <i class="bi bi-shield-check"></i> Verify Key & Open DICOM
+                        </button>
+                        <button class="btn btn-outline" style="height: 42px;" onclick="openRadiologyQrScannerModal()">
+                            <i class="bi bi-qr-code-scan"></i> Scan Patient QR
+                        </button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="modern-table">
+                            <thead>
+                                <tr>
+                                    <th>Serial & Scan ID</th>
+                                    <th>Unique Claim Key</th>
+                                    <th>Patient Details</th>
+                                    <th>Modality & Body Region</th>
+                                    <th>Target Imaging Centre</th>
+                                    <th>Clinical Indication</th>
+                                    <th>Scan Status</th>
+                                    <th>Amount (₹)</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="radiologyWorklistTableBody">
+                                <!-- Populated dynamically via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -1346,19 +1478,65 @@
                             </select>
                         </div>
 
-                        <div class="clinical-section">
+                        <!-- Pathology Lab Diagnostic Orders & Routing -->
+                        <div class="clinical-section" style="border-left: 3px solid var(--indigo-600);">
                             <div class="clinical-section-title">
-                                <span><i class="bi bi-eyedropper" style="color: var(--indigo-600);"></i> Diagnostic Pathology & Lab Orders (M11)</span>
-                                <span style="font-size: 11px; color: var(--emerald-600); font-weight: 700;">Auto-routes to Lab Worklist</span>
+                                <span><i class="bi bi-eyedropper" style="color: var(--indigo-600);"></i> Pathology Diagnostic Lab Tests (M11)</span>
+                                <span class="badge badge-purple" style="font-size: 10px;"><i class="bi bi-broadcast"></i> NABL Auto-Route</span>
                             </div>
-                            <div class="form-row" id="emrLabOrdersGrid"></div>
+                            <div class="form-row" id="emrLabOrdersGrid" style="margin-bottom: 10px;"></div>
+
+                            <div style="background: var(--bg-main); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-top: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="font-size: 11px; font-weight: 700; color: var(--indigo-700); text-transform: uppercase;">
+                                        <i class="bi bi-geo-alt-fill"></i> Target Pathology Lab:
+                                    </span>
+                                    <span style="font-size: 10px; color: var(--text-muted);">Unique Claim Key on Routing</span>
+                                </div>
+                                <select class="form-control" id="emrTargetLabSelect" style="font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                                    <option value="LAB-CTR-01" selected>Apex Central Pathology & NABL Lab (Main Campus)</option>
+                                    <option value="LAB-CTR-02">Dr. Lal PathLabs (Bandra West Station)</option>
+                                    <option value="LAB-CTR-03">Metropolis Healthcare Diagnostics (Pali Hill)</option>
+                                    <option value="LAB-CTR-04">Thyrocare Processing Hub (SV Road)</option>
+                                </select>
+                                <button class="btn btn-primary btn-sm" style="width: 100%; font-size: 12px; font-weight: 700;" onclick="lockSignAndRouteLabOrder()">
+                                    <i class="bi bi-send-check-fill"></i> Lock, Sign & Route to Pathology Lab
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Radiology & Digital X-Ray Imaging Orders & Routing -->
+                        <div class="clinical-section" style="border-left: 3px solid #0284c7;">
+                            <div class="clinical-section-title">
+                                <span><i class="bi bi-radioactive" style="color: #0284c7;"></i> Radiology, Digital X-Ray & Imaging (M12)</span>
+                                <span class="badge badge-blue" style="font-size: 10px;"><i class="bi bi-broadcast"></i> AERB / DICOM</span>
+                            </div>
+                            <div class="form-row" id="emrRadiologyOrdersGrid" style="margin-bottom: 10px;"></div>
+
+                            <div style="background: var(--bg-main); padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-subtle); margin-top: 8px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="font-size: 11px; font-weight: 700; color: #0284c7; text-transform: uppercase;">
+                                        <i class="bi bi-geo-alt-fill"></i> Target Imaging Centre:
+                                    </span>
+                                    <span style="font-size: 10px; color: var(--text-muted);">Unique Claim Key on Routing</span>
+                                </div>
+                                <select class="form-control" id="emrTargetRadiologySelect" style="font-size: 12px; font-weight: 600; margin-bottom: 8px;">
+                                    <option value="RAD-CTR-01" selected>Apex Central Digital X-Ray Suite (Ground Floor)</option>
+                                    <option value="RAD-CTR-02">Mahajan Imaging & Diagnostic Scan Centre (Bandra Hub)</option>
+                                    <option value="RAD-CTR-03">Suburban Diagnostics MRI & CT Hub (Linking Road)</option>
+                                    <option value="RAD-CTR-04">NM Medical Radiology & Ultrasound Center (Santacruz)</option>
+                                </select>
+                                <button class="btn btn-primary btn-sm" style="width: 100%; font-size: 12px; font-weight: 700; background: #0284c7; border-color: #0284c7;" onclick="lockSignAndRouteRadiologyOrder()">
+                                    <i class="bi bi-send-check-fill"></i> Lock, Sign & Route to Radiology Centre
+                                </button>
+                            </div>
                         </div>
 
                         <div class="clinical-section">
                             <div class="clinical-section-title">
-                                <span><i class="bi bi-card-text" style="color: var(--emerald-600);"></i> Clinical Advice & Instructions</span>
+                                <span><i class="bi bi-card-text" style="color: var(--emerald-600);"></i> Clinical Advice & Lifestyle Instructions</span>
                             </div>
-                            <textarea id="emrClinicalAdvice" class="form-control" rows="2" placeholder="Lifestyle advice, diet restrictions..."></textarea>
+                            <textarea id="emrClinicalAdvice" class="form-control" rows="2" placeholder="Lifestyle advice, diet restrictions, fasting or scan prep notes..."></textarea>
                         </div>
                     </div>
 
@@ -2737,6 +2915,160 @@
     </div>
 </div>
 
+<!-- Modal 13: Doctor Pathology Lab Order Dispatch & WhatsApp Simulator -->
+<div class="modal-backdrop" id="labOrderDispatchModal">
+    <div class="modal-box modal-lg">
+        <div class="modal-header" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(99, 102, 241, 0.04));">
+            <div>
+                <h3 class="modal-title" style="color: var(--primary-600);"><i class="bi bi-patch-check-fill"></i> Pathology Lab Order Locked & Routed (NABL)</h3>
+                <p class="card-subtitle" style="margin: 2px 0 0 0;">Unique 6-Digit Claim Key generated & pushed to selected Diagnostic Lab worklist</p>
+            </div>
+            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" id="labOrderDispatchModalBody">
+            <!-- Populated dynamically via JS -->
+        </div>
+        <div class="modal-footer" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <button class="btn btn-outline" onclick="simulateWhatsAppLabSend()">
+                <i class="bi bi-whatsapp" style="color: #25d366;"></i> Re-send WhatsApp to Patient
+            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-outline" data-close-modal>Close</button>
+                <button class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer-fill"></i> Print Requisition Slip
+                </button>
+                <button class="btn btn-emerald" onclick="document.getElementById('labOrderDispatchModal').classList.remove('active'); switchView('lab');">
+                    <i class="bi bi-eyedropper"></i> Open Lab Worklist Desk
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 14: Doctor Radiology & X-Ray Order Dispatch & WhatsApp Simulator -->
+<div class="modal-backdrop" id="radiologyDispatchModal">
+    <div class="modal-box modal-lg">
+        <div class="modal-header" style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.08), rgba(14, 165, 233, 0.04));">
+            <div>
+                <h3 class="modal-title" style="color: #0284c7;"><i class="bi bi-patch-check-fill"></i> Radiology & X-Ray Order Locked & Routed (AERB)</h3>
+                <p class="card-subtitle" style="margin: 2px 0 0 0;">Unique 6-Digit Claim Key generated & pushed to selected Scan Centre worklist</p>
+            </div>
+            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" id="radiologyDispatchModalBody">
+            <!-- Populated dynamically via JS -->
+        </div>
+        <div class="modal-footer" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <button class="btn btn-outline" onclick="simulateWhatsAppRadiologySend()">
+                <i class="bi bi-whatsapp" style="color: #25d366;"></i> Re-send WhatsApp to Patient
+            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-outline" data-close-modal>Close</button>
+                <button class="btn btn-primary" style="background: #0284c7; border-color: #0284c7;" onclick="window.print()">
+                    <i class="bi bi-printer-fill"></i> Print Imaging Slip
+                </button>
+                <button class="btn btn-emerald" onclick="document.getElementById('radiologyDispatchModal').classList.remove('active'); switchView('radiology');">
+                    <i class="bi bi-film"></i> Open Radiology Suite
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 15: Interactive DICOM Viewer & Radiologist Reporting Modal -->
+<div class="modal-backdrop" id="radiologyViewerModal">
+    <div class="modal-box modal-xl" style="max-width: 1080px;">
+        <div class="modal-header" style="background: #090d16; color: #f8fafc; border-bottom: 1px solid #1e293b;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span class="badge" style="background: #0284c7; color: #ffffff; font-weight: 800;">DICOM 3.0</span>
+                <h3 class="modal-title" style="color: #f8fafc;" id="dicomViewerModalTitle">Radiology Imaging & DICOM Film Review</h3>
+            </div>
+            <button class="modal-close-btn" style="color: #94a3b8;" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" id="radiologyViewerModalBody" style="background: #020617; color: #f8fafc; padding: 20px;">
+            <!-- Populated dynamically via JS -->
+        </div>
+        <div class="modal-footer" style="background: #090d16; border-top: 1px solid #1e293b; justify-content: space-between;">
+            <div style="font-size: 11.5px; color: #64748b;">
+                <i class="bi bi-shield-check" style="color: #10b981;"></i> AERB Diagnostic Radiation Safety Compliant • 256-bit Digital Signature
+            </div>
+            <div style="display: flex; gap: 10px;" id="radiologyViewerFooterButtons">
+                <button class="btn btn-outline" style="border-color: #334155; color: #cbd5e1;" data-close-modal>Close</button>
+                <button class="btn btn-primary" id="releaseRadiologyReportActionBtn" style="background: #0284c7; border-color: #0284c7;" onclick="verifyAndReleaseRadiologyReport()">
+                    <i class="bi bi-file-earmark-check-fill"></i> Sign & Release Official Report
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 16: Phlebotomist Sample Collection Desk Modal -->
+<div class="modal-backdrop" id="labPhlebotomyModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="bi bi-eyedropper" style="color: var(--primary-600);"></i> Phlebotomy Sample Collection & Barcode Desk</h3>
+            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" id="labPhlebotomyModalBody">
+            <!-- Populated dynamically via JS -->
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" data-close-modal>Cancel</button>
+            <button class="btn btn-primary" onclick="confirmSampleCollectionAction()"><i class="bi bi-upc-scan"></i> Confirm Sample & Print Barcode</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 17: Pathology Lab QR Scanner Simulation -->
+<div class="modal-backdrop" id="labQrScannerModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="bi bi-qr-code-scan" style="color: var(--primary-600);"></i> Scan Patient Lab Order QR Code</h3>
+            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 24px;">
+            <div style="border: 2px dashed var(--primary-600); border-radius: 12px; padding: 30px; background: rgba(79, 70, 229, 0.03); margin-bottom: 20px;">
+                <i class="bi bi-upc-scan" style="font-size: 54px; color: var(--primary-600);"></i>
+                <div style="margin-top: 12px; font-weight: 700; color: var(--text-primary);">Point Camera at Patient's WhatsApp / Prescription QR</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Simulates hardware 2D barcode scanner feed</div>
+            </div>
+            <div class="form-group" style="text-align: left;">
+                <label class="form-label">Simulate Scanned Lab Key / Barcode:</label>
+                <input type="text" id="simulatedLabScanKeyInput" class="form-control" value="894-210" placeholder="e.g. 894-210">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" data-close-modal>Cancel</button>
+            <button class="btn btn-primary" onclick="submitSimulatedLabQrScan()"><i class="bi bi-check2-circle"></i> Submit Scanned Key</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 18: Radiology QR Scanner Simulation -->
+<div class="modal-backdrop" id="radiologyQrScannerModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 class="modal-title"><i class="bi bi-qr-code-scan" style="color: #0284c7;"></i> Scan Patient Radiology Order QR Code</h3>
+            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 24px;">
+            <div style="border: 2px dashed #0284c7; border-radius: 12px; padding: 30px; background: rgba(2, 132, 199, 0.03); margin-bottom: 20px;">
+                <i class="bi bi-film" style="font-size: 54px; color: #0284c7;"></i>
+                <div style="margin-top: 12px; font-weight: 700; color: var(--text-primary);">Point Camera at Patient's Radiology Slip / WhatsApp QR</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Simulates hardware scanner in X-Ray / CT scan control room</div>
+            </div>
+            <div class="form-group" style="text-align: left;">
+                <label class="form-label">Simulate Scanned Radiology Key / Serial:</label>
+                <input type="text" id="simulatedRadiologyScanKeyInput" class="form-control" value="412-880" placeholder="e.g. 412-880">
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-outline" data-close-modal>Cancel</button>
+            <button class="btn btn-primary" style="background: #0284c7; border-color: #0284c7;" onclick="submitSimulatedRadiologyQrScan()"><i class="bi bi-check2-circle"></i> Submit Scanned Key</button>
+        </div>
+    </div>
+</div>
+
 <div class="modal-backdrop" id="roleSwitcherModal">
     <div class="modal-box">
         <div class="modal-header"><h3 class="modal-title">Switch Role & Workspace Mode (RBAC)</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
@@ -2749,6 +3081,7 @@
                 <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('IPD Coordinator')"><b><i class="bi bi-door-open"></i> IPD Admission & Bed Coordinator</b></div>
                 <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Pharmacist')"><b><i class="bi bi-capsule"></i> Chief Pharmacist</b></div>
                 <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Pathologist')"><b><i class="bi bi-eyedropper"></i> Consultant Pathologist (Lab Director)</b></div>
+                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Radiologist')"><b><i class="bi bi-radioactive"></i> Consultant Radiologist (AERB)</b></div>
                 <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Billing Executive')"><b><i class="bi bi-cash-coin"></i> Billing & Cashier Desk</b></div>
             </div>
         </div>

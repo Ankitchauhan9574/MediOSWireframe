@@ -3121,6 +3121,39 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
     .wizard-step-line { display: none; }
 }
 
+/* ==========================================================================
+   Radiology DICOM 3.0 Viewer & Pathology Phlebotomy Enhancements
+   ========================================================================== */
+.rx-claim-key-pill {
+    transition: all 0.2s ease;
+    cursor: default;
+}
+.rx-claim-key-pill:hover {
+    transform: scale(1.04);
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.2);
+}
+
+.sample-tube-indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+.sample-tube-indicator.tube-purple {
+    background: linear-gradient(135deg, #a855f7, #7e22ce);
+}
+.sample-tube-indicator.tube-red {
+    background: linear-gradient(135deg, #f43f5e, #be123c);
+}
+.sample-tube-indicator.tube-grey {
+    background: linear-gradient(135deg, #94a3b8, #475569);
+}
+
+#dicomImageWrapper:hover #dicomActiveFilmImg {
+    transform: scale(1.02);
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
@@ -3136,5 +3169,6 @@ button, input, select, textarea { font-family: inherit; font-size: inherit; }
     .header-search { display: none; }
     .kpi-grid { grid-template-columns: 1fr; }
 }
+
 
 
