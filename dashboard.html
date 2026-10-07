@@ -248,7 +248,7 @@
                 <!-- Global Search -->
                 <div class="header-search">
                     <i class="bi bi-search search-icon"></i>
-                    <input type="text" id="globalSearchInput" placeholder="Search patient, medicine, lab test, MRN...">
+                    <input type="text" id="globalSearchInput" placeholder="Search patient, MRN...">
                     <span class="search-kbd">Ctrl + K</span>
                 </div>
             </div>
@@ -2013,15 +2013,245 @@
 
             <!-- Analytics -->
             <section class="view-section" id="view-analytics">
-                <div class="analytics-chart-card">
-                    <div class="card-header"><h3 class="card-title">6-Month Revenue Growth Breakdown (₹)</h3></div>
-                    <div class="css-bar-chart">
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">5.9L</span><div class="bar-fill" style="height: 55%;"></div><span class="bar-label">May</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">6.7L</span><div class="bar-fill" style="height: 62%;"></div><span class="bar-label">Jun</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">7.4L</span><div class="bar-fill" style="height: 70%;"></div><span class="bar-label">Jul</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">8.3L</span><div class="bar-fill" style="height: 78%;"></div><span class="bar-label">Aug</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700;">9.5L</span><div class="bar-fill" style="height: 90%;"></div><span class="bar-label">Sep</span></div>
-                        <div class="bar-col"><span style="font-size: 10px; font-weight: 700; color: var(--emerald-600);">10.6L</span><div class="bar-fill" style="height: 100%; background: linear-gradient(180deg, #10b981, #0d9488);"></div><span class="bar-label" style="color: var(--emerald-600);">Oct (Est)</span></div>
+                <!-- Top Executive KPI Ribbon -->
+                <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); margin-bottom: 24px;">
+                    <div class="kpi-card kpi-blue">
+                        <div class="kpi-icon icon-blue"><i class="bi bi-graph-up-arrow"></i></div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Monthly Gross Run-Rate</div>
+                            <div class="kpi-value">₹10,62,400</div>
+                            <div class="kpi-subtext text-emerald font-medium">
+                                <i class="bi bi-arrow-up-right"></i> +18.4% MoM Growth
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-teal">
+                        <div class="kpi-icon icon-teal"><i class="bi bi-people-fill"></i></div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Consultations Completed</div>
+                            <div class="kpi-value">1,280</div>
+                            <div class="kpi-subtext text-emerald font-medium">
+                                <i class="bi bi-check-circle-fill"></i> 42 Avg / Day • 98% On-Time
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-emerald">
+                        <div class="kpi-icon icon-emerald"><i class="bi bi-calendar-check-fill"></i></div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Patient No-Show Rate</div>
+                            <div class="kpi-value">3.8%</div>
+                            <div class="kpi-subtext text-emerald font-medium">
+                                <i class="bi bi-arrow-down-right"></i> -2.4% via WhatsApp Bot
+                            </div>
+                        </div>
+                    </div>
+                    <div class="kpi-card kpi-indigo">
+                        <div class="kpi-icon icon-indigo"><i class="bi bi-star-fill"></i></div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Patient NPS Trust Score</div>
+                            <div class="kpi-value">+78</div>
+                            <div class="kpi-subtext text-amber font-medium">
+                                <i class="bi bi-patch-check-fill"></i> 94% 5-Star Reviews (326 ratings)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mid Analytics Grid: Main Chart & Stream Split -->
+                <div class="grid-2-col" style="grid-template-columns: 1.7fr 1fr; gap: 24px; margin-bottom: 24px;">
+                    <!-- Left: 6-Month Revenue Bar Chart -->
+                    <div class="analytics-chart-card">
+                        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid var(--border-subtle);">
+                            <div>
+                                <h3 class="card-title" style="font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                    <i class="bi bi-bar-chart-fill" style="color: var(--primary-600);"></i> 6-Month Revenue Growth Breakdown (₹)
+                                </h3>
+                                <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Aggregated collections across OPD, Pharmacy POS, Pathology & Radiology</p>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <span class="badge badge-blue">Target: ₹12L</span>
+                                <span class="badge badge-emerald">Oct: +11.5%</span>
+                            </div>
+                        </div>
+                        <div class="css-bar-chart">
+                            <div class="bar-col">
+                                <span class="bar-val">5.9L</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="height: 55%;"></div>
+                                </div>
+                                <span class="bar-label">May</span>
+                            </div>
+                            <div class="bar-col">
+                                <span class="bar-val">6.7L</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="height: 62%;"></div>
+                                </div>
+                                <span class="bar-label">Jun</span>
+                            </div>
+                            <div class="bar-col">
+                                <span class="bar-val">7.4L</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="height: 70%;"></div>
+                                </div>
+                                <span class="bar-label">Jul</span>
+                            </div>
+                            <div class="bar-col">
+                                <span class="bar-val">8.3L</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="height: 78%;"></div>
+                                </div>
+                                <span class="bar-label">Aug</span>
+                            </div>
+                            <div class="bar-col">
+                                <span class="bar-val">9.5L</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="height: 90%;"></div>
+                                </div>
+                                <span class="bar-label">Sep</span>
+                            </div>
+                            <div class="bar-col">
+                                <span class="bar-val" style="color: var(--emerald-600); border-color: rgba(16, 185, 129, 0.4);">10.6L</span>
+                                <div class="bar-track">
+                                    <div class="bar-fill" style="height: 100%; background: linear-gradient(180deg, #10b981, #059669); box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);"></div>
+                                </div>
+                                <span class="bar-label" style="color: var(--emerald-600); font-weight: 800;">Oct (Est)</span>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 24px; background: var(--bg-main); border-top: 1px solid var(--border-subtle); font-size: 12px; color: var(--text-secondary);">
+                            <span><i class="bi bi-info-circle-fill" style="color: var(--primary-500);"></i> 6-Month Compounded Monthly Growth Rate: <b>+12.4%</b></span>
+                            <span style="font-weight: 700; color: var(--emerald-600);">Highest Performing Q3</span>
+                        </div>
+                    </div>
+
+                    <!-- Right: Revenue by Clinical Stream Breakdown -->
+                    <div class="card" style="padding: 22px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+                                <div>
+                                    <h4 style="font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                                        <i class="bi bi-pie-chart-fill" style="color: #6366f1;"></i> Revenue Streams
+                                    </h4>
+                                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Departmental contribution</p>
+                                </div>
+                                <span class="badge badge-purple">October 2026</span>
+                            </div>
+
+                            <div style="display: flex; flex-direction: column; gap: 14px;">
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+                                        <span style="font-weight: 700;"><i class="bi bi-capsule" style="color: #0284c7;"></i> Pharmacy & FEFO Stock</span>
+                                        <b>₹4,03,700 (38%)</b>
+                                    </div>
+                                    <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+                                        <div style="width: 38%; height: 100%; background: linear-gradient(90deg, #38bdf8, #0284c7); border-radius: 4px;"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+                                        <span style="font-weight: 700;"><i class="bi bi-person-badge" style="color: #10b981;"></i> OPD Doctor Consultations</span>
+                                        <b>₹3,39,900 (32%)</b>
+                                    </div>
+                                    <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+                                        <div style="width: 32%; height: 100%; background: linear-gradient(90deg, #34d399, #10b981); border-radius: 4px;"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+                                        <span style="font-weight: 700;"><i class="bi bi-droplet-fill" style="color: #f43f5e;"></i> Pathology Lab & Bloodwork</span>
+                                        <b>₹1,59,300 (15%)</b>
+                                    </div>
+                                    <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+                                        <div style="width: 15%; height: 100%; background: linear-gradient(90deg, #fb7185, #f43f5e); border-radius: 4px;"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+                                        <span style="font-weight: 700;"><i class="bi bi-radioactive" style="color: #f59e0b;"></i> Radiology & Digital X-Ray</span>
+                                        <b>₹1,06,200 (10%)</b>
+                                    </div>
+                                    <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+                                        <div style="width: 10%; height: 100%; background: linear-gradient(90deg, #fbbf24, #f59e0b); border-radius: 4px;"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 4px;">
+                                        <span style="font-weight: 700;"><i class="bi bi-hospital" style="color: #6366f1;"></i> IPD Daycare & Nursing</span>
+                                        <b>₹53,100 (5%)</b>
+                                    </div>
+                                    <div style="height: 8px; background: var(--bg-main); border-radius: 4px; overflow: hidden;">
+                                        <div style="width: 5%; height: 100%; background: linear-gradient(90deg, #818cf8, #6366f1); border-radius: 4px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px; padding: 12px; background: rgba(14, 165, 233, 0.05); border: 1px dashed rgba(14, 165, 233, 0.3); border-radius: var(--radius-md); font-size: 12px; color: var(--primary-700); display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-shield-check" style="font-size: 16px; color: var(--primary-600);"></i>
+                            <span>All streams auto-reconcile with Cash Desk POS ledger every 24 hours.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Slot Efficiency & Patient Retention Cards -->
+                <div class="grid-2-col" style="grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div class="card" style="padding: 22px;">
+                        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-whatsapp" style="color: #25d366;"></i> Smart Slot Efficiency & Automated Alerts
+                        </h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                            <div style="padding: 14px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">WhatsApp Alerts Sent</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--text-primary); margin-top: 4px;">1,420</div>
+                                <div style="font-size: 11px; color: var(--emerald-600); margin-top: 2px;">99.4% Delivery Success</div>
+                            </div>
+                            <div style="padding: 14px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Same-Day Slot Refill</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--text-primary); margin-top: 4px;">94.2%</div>
+                                <div style="font-size: 11px; color: var(--primary-600); margin-top: 2px;">Avg 18 mins to fill vacant slot</div>
+                            </div>
+                            <div style="padding: 14px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Doctor Chair Utilization</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--text-primary); margin-top: 4px;">86.5%</div>
+                                <div style="font-size: 11px; color: var(--emerald-600); margin-top: 2px;">+14% vs baseline</div>
+                            </div>
+                            <div style="padding: 14px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Peak Consultation Window</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--text-primary); margin-top: 4px;">10 AM - 1 PM</div>
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Morning OPD session</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="padding: 22px;">
+                        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+                            <i class="bi bi-heart-pulse-fill" style="color: var(--rose-500);"></i> Patient Retention & Care Adherence
+                        </h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                            <div style="padding: 14px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Repeat Patient Retention</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--text-primary); margin-top: 4px;">68.4%</div>
+                                <div style="font-size: 11px; color: var(--emerald-600); margin-top: 2px;">High chronic care loyalty</div>
+                            </div>
+                            <div style="padding: 14px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Rx Dispense Fulfillment</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--text-primary); margin-top: 4px;">92.1%</div>
+                                <div style="font-size: 11px; color: var(--primary-600); margin-top: 2px;">Claim key pharmacy pickup</div>
+                            </div>
+                            <div style="padding: 14px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Average Wait Time</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--text-primary); margin-top: 4px;">11.4 mins</div>
+                                <div style="font-size: 11px; color: var(--emerald-600); margin-top: 2px;">Reduced from 38 mins</div>
+                            </div>
+                            <div style="padding: 14px; background: var(--bg-main); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+                                <div style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">ABHA Health ID Adoption</div>
+                                <div style="font-size: 20px; font-weight: 900; color: var(--text-primary); margin-top: 4px;">74.8%</div>
+                                <div style="font-size: 11px; color: var(--primary-600); margin-top: 2px;">Govt ABDM linked accounts</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
