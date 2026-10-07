@@ -44,7 +44,139 @@ document.addEventListener('DOMContentLoaded', () => {
     const audioToggleIcon = document.getElementById('audioToggleIcon');
 
     // --------------------------------------------------------------------------
-    // 1. Initial Setup & View Switching
+    // 1. Role-Based Access Control (RBAC) Workspace Configurations
+    // --------------------------------------------------------------------------
+    const RoleConfigurations = {
+        'Pharmacist': {
+            role: 'Pharmacist',
+            name: 'Suresh Nair (Head Pharm)',
+            title: 'Chief Pharmacist',
+            branch: 'Apex MediStore & Chemist (Pharmacy Counter)',
+            brandTag: 'MEDICAL STORE',
+            avatar: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['pharmacy', 'procurement', 'audit'],
+            defaultView: 'pharmacy',
+            tagClass: 'badge-blue'
+        },
+        'Pathologist': {
+            role: 'Pathologist',
+            name: 'Dr. Sunita Rao (Path MD)',
+            title: 'Consultant Pathologist',
+            branch: 'Apex NABL Diagnostic Pathology Labs',
+            brandTag: 'DIAGNOSTIC LAB',
+            avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['lab', 'radiology', 'audit'],
+            defaultView: 'lab',
+            tagClass: 'badge-purple'
+        },
+        'Radiologist': {
+            role: 'Radiologist',
+            name: 'Dr. Vikramaditya (Radio MD)',
+            title: 'Consultant Radiologist',
+            branch: 'Apex Diagnostic Imaging & Digital X-Ray',
+            brandTag: 'RADIOLOGY SUITE',
+            avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['radiology', 'lab', 'audit'],
+            defaultView: 'radiology',
+            tagClass: 'badge-blue'
+        },
+        'Doctor': {
+            role: 'Doctor',
+            name: 'Dr. Rajeshwar S. (MD Med)',
+            title: 'Consultant Physician & Cardiologist',
+            branch: 'Apex Specialist OPD Clinic',
+            brandTag: 'DOCTOR CLINIC',
+            avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['emr', 'queue', 'appointments', 'patients', 'payouts', 'leaves-waitlist'],
+            defaultView: 'emr',
+            tagClass: 'badge-emerald'
+        },
+        'Hospital Admin': {
+            role: 'Hospital Admin',
+            name: 'Dr. Anand Mehra (Medical Supt)',
+            title: 'Hospital Administrator',
+            branch: 'Apex Hospital (Wards, IPD & OT)',
+            brandTag: 'HOSPITAL IPD',
+            avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['ipd-bed-map', 'ipd-admissions', 'ipd-nursing', 'ipd-rounds', 'ipd-discharge', 'ot-management', 'tpa-desk', 'procurement', 'multi-branch', 'dashboard', 'analytics'],
+            defaultView: 'ipd-bed-map',
+            tagClass: 'badge-rose'
+        },
+        'Staff Nurse': {
+            role: 'Staff Nurse',
+            name: 'Sarita Sharma (Head Nurse)',
+            title: 'Ward Nursing In-Charge',
+            branch: 'Apex In-Patient Wards & Nursing Station',
+            brandTag: 'NURSING STATION',
+            avatar: 'https://images.unsplash.com/photo-1594824813580-49605511b8b6?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['ipd-nursing', 'ipd-bed-map', 'ipd-admissions', 'ipd-rounds'],
+            defaultView: 'ipd-nursing',
+            tagClass: 'badge-emerald'
+        },
+        'Chief Surgeon': {
+            role: 'Chief Surgeon',
+            name: 'Dr. Sameer Kapoor (MS Ortho)',
+            title: 'Chief of Surgery / OT Director',
+            branch: 'Apex Surgical & OT Suites',
+            brandTag: 'SURGERY SUITE',
+            avatar: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['ot-management', 'ipd-bed-map', 'ipd-admissions', 'ipd-rounds'],
+            defaultView: 'ot-management',
+            tagClass: 'badge-rose'
+        },
+        'Reception Desk': {
+            role: 'Reception Desk',
+            name: 'Pooja K. (Front Desk)',
+            title: 'Senior Receptionist',
+            branch: 'Apex Reception & Token Desk',
+            brandTag: 'FRONT DESK',
+            avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['queue', 'appointments', 'patients', 'billing', 'online-booking', 'portal'],
+            defaultView: 'queue',
+            tagClass: 'badge-blue'
+        },
+        'Billing Executive': {
+            role: 'Billing Executive',
+            name: 'Anil Mehta (Billing Desk)',
+            title: 'Accounts & Billing Cashier',
+            branch: 'Apex Cash & Billing Desk',
+            brandTag: 'BILLING DESK',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+            allowedViews: ['billing', 'tpa-desk', 'payouts', 'analytics'],
+            defaultView: 'billing',
+            tagClass: 'badge-blue'
+        },
+        'Super Admin': {
+            role: 'Super Admin',
+            name: 'Apex Group Administrator',
+            title: 'Master Administrator',
+            branch: 'Apex Healthcare Enterprise Group',
+            brandTag: 'MASTER ERP',
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&auto=format&fit=crop&q=80',
+            allowedViews: 'all',
+            defaultView: 'dashboard',
+            tagClass: 'badge-purple'
+        }
+    };
+
+    function normalizeRole(role) {
+        if (!role) return 'Doctor';
+        const r = role.toLowerCase();
+        if (r.includes('pharm') || r.includes('chemist') || r.includes('medic')) return 'Pharmacist';
+        if (r.includes('patho') || r.includes('lab')) return 'Pathologist';
+        if (r.includes('radio') || r.includes('xray') || r.includes('x-ray')) return 'Radiologist';
+        if (r.includes('doc')) return 'Doctor';
+        if (r.includes('nurse')) return 'Staff Nurse';
+        if (r.includes('surg') || r.includes('ot')) return 'Chief Surgeon';
+        if (r.includes('reception') || r.includes('front')) return 'Reception Desk';
+        if (r.includes('bill') || r.includes('cash')) return 'Billing Executive';
+        if (r.includes('hosp') || r.includes('ipd')) return 'Hospital Admin';
+        if (r.includes('admin')) return 'Super Admin';
+        return RoleConfigurations[role] ? role : 'Doctor';
+    }
+
+    // --------------------------------------------------------------------------
+    // Initial Setup & View Switching
     // --------------------------------------------------------------------------
     function init() {
         startLiveClock();
@@ -81,9 +213,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setupGlobalShortcuts();
 
         // Restore persona from session if present
-        if (state.currentRole) {
-            window.switchAppRole(state.currentRole, false);
-        }
+        const savedRole = sessionStorage.getItem('medios_user_role') || state.currentRole || 'Doctor';
+        window.switchAppRole(savedRole, false);
 
         // Support direct view navigation via hash or query param (e.g., #view=online-booking)
         const hashMatch = window.location.hash.match(/view=([a-zA-Z0-9_-]+)/);
@@ -95,6 +226,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function switchView(viewName) {
+        // Enforce RBAC access permissions
+        const activeRoleKey = normalizeRole(state.currentRole);
+        const roleConf = RoleConfigurations[activeRoleKey] || RoleConfigurations['Super Admin'];
+        if (roleConf && roleConf.allowedViews !== 'all' && !roleConf.allowedViews.includes(viewName)) {
+            showToast(`Access Restricted: Module '${viewName}' is not part of ${roleConf.brandTag}.`, 'warning', 'RBAC Security');
+            viewName = roleConf.defaultView;
+        }
+
         state.currentView = viewName;
         playAudioFx('click');
         
@@ -5151,17 +5290,113 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`Issued Queue Token for appointment ${id}`, 'success', 'Queue Board');
     };
 
-    window.switchAppRole = function(role, notify = true) {
-        state.currentRole = role;
-        MediData.currentUser.role = role;
-        const badge = document.getElementById('currentRoleBadge');
+    window.applyRoleNavigationFilter = function(role) {
+        const activeRoleKey = normalizeRole(role);
+        const config = RoleConfigurations[activeRoleKey] || RoleConfigurations['Super Admin'];
+
+        // 1. Filter Nav Items in sidebar
+        const allNavItems = document.querySelectorAll('.sidebar-nav .nav-item[data-view]');
+        allNavItems.forEach(item => {
+            const view = item.dataset.view;
+            if (config.allowedViews === 'all' || config.allowedViews.includes(view)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        // 2. Hide Nav Group Titles that have all hidden children
+        const navContainer = document.querySelector('.sidebar-nav');
+        if (navContainer) {
+            const children = Array.from(navContainer.children);
+            let currentGroup = null;
+            let groupHasVisibleItems = false;
+
+            children.forEach(el => {
+                if (el.classList.contains('nav-group-title')) {
+                    if (currentGroup) {
+                        currentGroup.style.display = groupHasVisibleItems ? 'block' : 'none';
+                    }
+                    currentGroup = el;
+                    groupHasVisibleItems = false;
+                } else if (el.classList.contains('nav-item')) {
+                    if (el.style.display !== 'none') {
+                        groupHasVisibleItems = true;
+                    }
+                }
+            });
+            if (currentGroup) {
+                currentGroup.style.display = groupHasVisibleItems ? 'block' : 'none';
+            }
+        }
+
+        // 3. Update User Profile Card in Sidebar Footer
+        const userCard = document.querySelector('.user-profile-card');
+        if (userCard) {
+            const img = userCard.querySelector('img');
+            const nameEl = userCard.querySelector('.user-name');
+            const roleBadge = document.getElementById('currentRoleBadge');
+            if (img && config.avatar) img.src = config.avatar;
+            if (nameEl) nameEl.innerText = config.name;
+            if (roleBadge) roleBadge.innerText = config.title;
+        }
+
+        // 4. Update Branch Badge in Sidebar Top
+        const branchNameEl = document.querySelector('.tenant-meta .branch-name');
+        const branchLabelEl = document.querySelector('.tenant-meta .label');
+        if (branchNameEl) {
+            branchNameEl.innerHTML = `<i class="bi bi-geo-alt-fill" style="color: #38bdf8; font-size: 11px;"></i> ${config.branch}`;
+        }
+        if (branchLabelEl) {
+            branchLabelEl.innerText = config.brandTag;
+        }
+
+        // 5. Update Header Role Tag
         const headerRole = document.getElementById('headerUserRoleTag');
-        if (badge) badge.innerText = role;
-        if (headerRole) headerRole.innerHTML = `<i class="bi bi-shield-lock-fill"></i> ${role} Mode`;
-        document.getElementById('roleSwitcherModal').classList.remove('active');
+        if (headerRole) {
+            headerRole.innerHTML = `<i class="bi bi-shield-lock-fill"></i> ${config.role} Mode`;
+        }
+
+        // 6. Header Buttons Contextual Visibility
+        const newPatBtn = document.querySelector('[onclick="openNewPatientModal()"]');
+        const tvBtn = document.getElementById('toggleTvBoardBtn');
+        const qrBtn = document.querySelector('[onclick="openQrCheckInModal()"]');
+
+        if (activeRoleKey === 'Pharmacist' || activeRoleKey === 'Pathologist' || activeRoleKey === 'Radiologist') {
+            if (newPatBtn) newPatBtn.style.display = 'none';
+            if (tvBtn) tvBtn.style.display = 'none';
+            if (qrBtn) qrBtn.style.display = 'none';
+        } else {
+            if (newPatBtn) newPatBtn.style.display = 'inline-flex';
+            if (tvBtn) tvBtn.style.display = 'flex';
+            if (qrBtn) qrBtn.style.display = 'flex';
+        }
+    };
+
+    window.switchAppRole = function(role, notify = true) {
+        const activeRoleKey = normalizeRole(role);
+        const config = RoleConfigurations[activeRoleKey];
+        state.currentRole = config.role;
+        MediData.currentUser.role = config.role;
+        MediData.currentUser.name = config.name;
+        sessionStorage.setItem('medios_user_role', config.role);
+        sessionStorage.setItem('medios_user_name', config.name);
+
+        applyRoleNavigationFilter(config.role);
+
+        // Switch to the role's default view
+        if (config.allowedViews !== 'all' && !config.allowedViews.includes(state.currentView)) {
+            switchView(config.defaultView);
+        } else if (notify) {
+            switchView(config.defaultView);
+        }
+
+        const roleModal = document.getElementById('roleSwitcherModal');
+        if (roleModal) roleModal.classList.remove('active');
+
         if (notify) {
-            playAudioFx('click');
-            showToast(`Switched active workspace role to: ${role}`, 'info', 'RBAC Workspace Mode');
+            playAudioFx('chime');
+            showToast(`Active Workspace: ${config.title} (${config.brandTag})`, 'info', 'Role Switched');
         }
     };
 

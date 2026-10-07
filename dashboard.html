@@ -3300,19 +3300,99 @@
 </div>
 
 <div class="modal-backdrop" id="roleSwitcherModal">
-    <div class="modal-box">
-        <div class="modal-header"><h3 class="modal-title">Switch Role & Workspace Mode (RBAC)</h3><button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button></div>
-        <div class="modal-body">
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Doctor')"><b><i class="bi bi-stethoscope"></i> Doctor Mode</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Chief Surgeon')"><b><i class="bi bi-scissors"></i> Chief Surgeon / OT Director</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Staff Nurse')"><b><i class="bi bi-bandaid"></i> Head Nurse / Ward In-Charge</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('TPA Claims Executive')"><b><i class="bi bi-shield-shaded"></i> Insurance / TPA Claims Desk</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('IPD Coordinator')"><b><i class="bi bi-door-open"></i> IPD Admission & Bed Coordinator</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Pharmacist')"><b><i class="bi bi-capsule"></i> Chief Pharmacist</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Pathologist')"><b><i class="bi bi-eyedropper"></i> Consultant Pathologist (Lab Director)</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Radiologist')"><b><i class="bi bi-radioactive"></i> Consultant Radiologist (AERB)</b></div>
-                <div class="card" style="padding: 10px; cursor: pointer;" onclick="switchAppRole('Billing Executive')"><b><i class="bi bi-cash-coin"></i> Billing & Cashier Desk</b></div>
+    <div class="modal-box modal-lg" style="max-width: 820px;">
+        <div class="modal-header">
+            <div>
+                <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+                    <i class="bi bi-shield-lock-fill" style="color: var(--primary-600);"></i> Switch Dedicated Workspace (RBAC)
+                </h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
+                    Select your clinical or operational department. Navigation and permissions are strictly isolated per role.
+                </p>
+            </div>
+            <button class="modal-close-btn" data-close-modal><i class="bi bi-x"></i></button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+                <!-- 1. Medical Store / Chemist -->
+                <div class="card" style="padding: 16px; cursor: pointer; border: 1.5px solid var(--border-subtle); transition: all 0.2s;" onclick="switchAppRole('Pharmacist')" onmouseover="this.style.borderColor='var(--primary-500)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border-subtle)'; this.style.transform='none';">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <div class="kpi-icon icon-blue" style="width: 40px; height: 40px; font-size: 18px; margin: 0;"><i class="bi bi-capsule-pill"></i></div>
+                        <span class="badge badge-blue">Medical Store</span>
+                    </div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Medical Store / Chemist</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Rx Claim Key Dispense, Medicine Stock & FEFO Ledger</div>
+                    <div style="font-size: 11px; color: var(--primary-600); font-weight: 700; margin-top: 10px;">Suresh Nair (Head Pharm) →</div>
+                </div>
+
+                <!-- 2. Diagnostic Laboratory & Pathology -->
+                <div class="card" style="padding: 16px; cursor: pointer; border: 1.5px solid var(--border-subtle); transition: all 0.2s;" onclick="switchAppRole('Pathologist')" onmouseover="this.style.borderColor='#a855f7'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border-subtle)'; this.style.transform='none';">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <div class="kpi-icon icon-indigo" style="width: 40px; height: 40px; font-size: 18px; margin: 0; background: rgba(168, 85, 247, 0.15); color: #9333ea;"><i class="bi bi-eyedropper"></i></div>
+                        <span class="badge badge-purple">Diagnostic Lab</span>
+                    </div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Laboratory & Pathology</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Test Worklist, Claim Key Search & NABL Release</div>
+                    <div style="font-size: 11px; color: #9333ea; font-weight: 700; margin-top: 10px;">Dr. Sunita Rao (Path MD) →</div>
+                </div>
+
+                <!-- 3. Radiology & X-Ray Center -->
+                <div class="card" style="padding: 16px; cursor: pointer; border: 1.5px solid var(--border-subtle); transition: all 0.2s;" onclick="switchAppRole('Radiologist')" onmouseover="this.style.borderColor='var(--primary-500)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border-subtle)'; this.style.transform='none';">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <div class="kpi-icon icon-blue" style="width: 40px; height: 40px; font-size: 18px; margin: 0;"><i class="bi bi-radioactive"></i></div>
+                        <span class="badge badge-blue">Radiology</span>
+                    </div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Radiology & Digital X-Ray</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">DICOM 3.0 Viewer, PACS Review & Film Reports</div>
+                    <div style="font-size: 11px; color: var(--primary-600); font-weight: 700; margin-top: 10px;">Dr. Vikramaditya (Radio MD) →</div>
+                </div>
+
+                <!-- 4. Doctor Clinical Workspace -->
+                <div class="card" style="padding: 16px; cursor: pointer; border: 1.5px solid var(--border-subtle); transition: all 0.2s;" onclick="switchAppRole('Doctor')" onmouseover="this.style.borderColor='var(--emerald-500)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border-subtle)'; this.style.transform='none';">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <div class="kpi-icon icon-emerald" style="width: 40px; height: 40px; font-size: 18px; margin: 0;"><i class="bi bi-stethoscope"></i></div>
+                        <span class="badge badge-emerald">Doctor Clinic</span>
+                    </div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Doctor Clinical Desk</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">EMR Cockpit, Live Queue Calling & Rx Routing</div>
+                    <div style="font-size: 11px; color: var(--emerald-600); font-weight: 700; margin-top: 10px;">Dr. Rajeshwar S. (MD Med) →</div>
+                </div>
+
+                <!-- 5. Hospital & In-Patient Operations -->
+                <div class="card" style="padding: 16px; cursor: pointer; border: 1.5px solid var(--border-subtle); transition: all 0.2s;" onclick="switchAppRole('Hospital Admin')" onmouseover="this.style.borderColor='var(--amber-500)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border-subtle)'; this.style.transform='none';">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <div class="kpi-icon icon-amber" style="width: 40px; height: 40px; font-size: 18px; margin: 0;"><i class="bi bi-hospital"></i></div>
+                        <span class="badge badge-amber" style="background: rgba(245, 158, 11, 0.15); color: #d97706;">Hospital IPD</span>
+                    </div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Hospital & Wards (IPD)</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Ward Bed Map, Nursing Station, Rounds & OT Suite</div>
+                    <div style="font-size: 11px; color: #d97706; font-weight: 700; margin-top: 10px;">Dr. Anand Mehra (Medical Supt) →</div>
+                </div>
+
+                <!-- 6. Reception & Patient Intake -->
+                <div class="card" style="padding: 16px; cursor: pointer; border: 1.5px solid var(--border-subtle); transition: all 0.2s;" onclick="switchAppRole('Reception Desk')" onmouseover="this.style.borderColor='var(--primary-500)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='var(--border-subtle)'; this.style.transform='none';">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                        <div class="kpi-icon icon-teal" style="width: 40px; height: 40px; font-size: 18px; margin: 0;"><i class="bi bi-ticket-perforated"></i></div>
+                        <span class="badge badge-blue">Front Desk</span>
+                    </div>
+                    <div style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Reception Desk & Tokens</div>
+                    <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Live Queue Tokens, Appointments & POS Billing</div>
+                    <div style="font-size: 11px; color: var(--teal-600); font-weight: 700; margin-top: 10px;">Pooja K. (Front Desk) →</div>
+                </div>
+
+                <!-- 7. Super Administrator (Full ERP) -->
+                <div class="card" style="padding: 16px; cursor: pointer; border: 1.5px solid var(--border-subtle); grid-column: 1 / -1; background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(14, 165, 233, 0.05) 100%); transition: all 0.2s;" onclick="switchAppRole('Super Admin')" onmouseover="this.style.borderColor='#6366f1';" onmouseout="this.style.borderColor='var(--border-subtle)';">
+                    <div style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="kpi-icon icon-indigo" style="width: 40px; height: 40px; font-size: 18px; margin: 0;"><i class="bi bi-shield-lock-fill"></i></div>
+                            <div>
+                                <div style="font-weight: 800; font-size: 14px; color: var(--text-primary);">Super Administrator (Master Access)</div>
+                                <div style="font-size: 12px; color: var(--text-muted);">Unrestricted access to all clinical, hospital, pharmacy, and diagnostic modules</div>
+                            </div>
+                        </div>
+                        <span class="badge badge-purple" style="font-size: 11px;">All 27 Modules Enabled →</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -311,6 +311,21 @@
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.18);
         }
 
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            padding-right: 36px;
+            cursor: pointer;
+        }
+
+        select.form-control option {
+            background: #0b1528;
+            color: #f8fafc;
+            padding: 8px;
+        }
+
         .btn-login {
             width: 100%;
             padding: 13px;
@@ -498,6 +513,21 @@
 
             <form id="loginForm" onsubmit="handleLoginSubmit(event)">
                 <div class="form-group">
+                    <label class="form-label">Select Dedicated Workspace (Role)</label>
+                    <div class="input-wrap">
+                        <i class="bi bi-person-badge-fill"></i>
+                        <select class="form-control" id="inputRoleSelect" onchange="syncRoleFromDropdown()">
+                            <option value="Doctor">Doctor Desk — Clinical OPD, EMR & Queue</option>
+                            <option value="Pharmacist">Medical Store / Chemist — Pharmacy & FEFO Stock</option>
+                            <option value="Pathologist">Diagnostic Laboratory — Pathology & X-Ray Reports</option>
+                            <option value="Hospital Admin">Hospital Admin — IPD Wards, Beds & OT Suite</option>
+                            <option value="Reception Desk">Reception Desk — Front Desk & Patient Intake</option>
+                            <option value="Super Admin">Super Administrator — Full Master ERP Access</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label class="form-label">Tenant / Clinic Code</label>
                     <div class="input-wrap">
                         <i class="bi bi-building-fill"></i>
@@ -529,45 +559,45 @@
             <!-- 1-Click Fast Persona Switcher -->
             <div class="demo-personas-section">
                 <div class="demo-title">
-                    <span>âš¡ 1-Click Demo Personas</span>
-                    <span style="font-size: 10px; color: #10b981;">Instant Switch</span>
+                    <span>⚡ 1-Click Dedicated Workspaces</span>
+                    <span style="font-size: 10px; color: #10b981;">Strict RBAC Separation</span>
                 </div>
 
                 <div class="personas-grid">
-                    <div class="persona-btn active-selected" onclick="selectPersona('Doctor', 'dr.rajeshwar@apexhealth.in', 'Dr. Rajeshwar S. (MD Med)')">
+                    <div class="persona-btn active-selected" id="pbtn-Doctor" onclick="selectPersona('Doctor', 'dr.rajeshwar@apexhealth.in', 'Dr. Rajeshwar S. (MD Med)')">
                         <i class="bi bi-stethoscope"></i>
-                        <div class="p-name">Doctor</div>
-                        <div class="p-sub">EMR & Rx</div>
+                        <div class="p-name">Doctor Desk</div>
+                        <div class="p-sub">OPD & EMR</div>
                     </div>
 
-                    <div class="persona-btn" onclick="selectPersona('Pharmacist', 'pharmacy@apexhealth.in', 'Suresh Nair (Head Pharm)')">
+                    <div class="persona-btn" id="pbtn-Pharmacist" onclick="selectPersona('Pharmacist', 'pharmacy@apexhealth.in', 'Suresh Nair (Head Pharm)')">
                         <i class="bi bi-capsule-pill"></i>
-                        <div class="p-name">Pharmacist</div>
-                        <div class="p-sub">FEFO Stock</div>
+                        <div class="p-name">Medical Store</div>
+                        <div class="p-sub">Chemist & FEFO</div>
                     </div>
 
-                    <div class="persona-btn" onclick="selectPersona('Pathologist', 'lab@apexhealth.in', 'Dr. Sunita Rao (Path MD)')">
+                    <div class="persona-btn" id="pbtn-Pathologist" onclick="selectPersona('Pathologist', 'lab@apexhealth.in', 'Dr. Sunita Rao (Path MD)')">
                         <i class="bi bi-eyedropper"></i>
-                        <div class="p-name">Pathologist</div>
-                        <div class="p-sub">Lab Release</div>
+                        <div class="p-name">Diagnostic Lab</div>
+                        <div class="p-sub">Pathology & X-Ray</div>
                     </div>
 
-                    <div class="persona-btn" onclick="selectPersona('Billing Cashier', 'cashier@apexhealth.in', 'Anil Mehta (Billing)')">
-                        <i class="bi bi-receipt"></i>
-                        <div class="p-name">Billing POS</div>
-                        <div class="p-sub">Cash & UPI</div>
+                    <div class="persona-btn" id="pbtn-HospitalAdmin" onclick="selectPersona('Hospital Admin', 'hospital@apexhealth.in', 'Dr. Anand Mehra (Medical Supt)')">
+                        <i class="bi bi-hospital"></i>
+                        <div class="p-name">Hospital / IPD</div>
+                        <div class="p-sub">Wards & OT</div>
                     </div>
 
-                    <div class="persona-btn" onclick="selectPersona('Reception Desk', 'reception@apexhealth.in', 'Pooja K. (Front Desk)')">
+                    <div class="persona-btn" id="pbtn-ReceptionDesk" onclick="selectPersona('Reception Desk', 'reception@apexhealth.in', 'Pooja K. (Front Desk)')">
                         <i class="bi bi-ticket-perforated"></i>
-                        <div class="p-name">Reception</div>
-                        <div class="p-sub">OPD Tokens</div>
+                        <div class="p-name">Reception Desk</div>
+                        <div class="p-sub">Tokens & Intake</div>
                     </div>
 
-                    <div class="persona-btn" onclick="selectPersona('Super Admin', 'admin@apexhealth.in', 'Apex Hospital Administrator')">
+                    <div class="persona-btn" id="pbtn-SuperAdmin" onclick="selectPersona('Super Admin', 'admin@apexhealth.in', 'Apex Group Administrator')">
                         <i class="bi bi-shield-lock"></i>
                         <div class="p-name">Administrator</div>
-                        <div class="p-sub">Governance</div>
+                        <div class="p-sub">Master Access</div>
                     </div>
                 </div>
             </div>
@@ -575,6 +605,15 @@
     </div>
 
     <script>
+        const RoleDirectory = {
+            'Doctor': { email: 'dr.rajeshwar@apexhealth.in', name: 'Dr. Rajeshwar S. (MD Med)', pbtn: 'pbtn-Doctor' },
+            'Pharmacist': { email: 'pharmacy@apexhealth.in', name: 'Suresh Nair (Head Pharm)', pbtn: 'pbtn-Pharmacist' },
+            'Pathologist': { email: 'lab@apexhealth.in', name: 'Dr. Sunita Rao (Path MD)', pbtn: 'pbtn-Pathologist' },
+            'Hospital Admin': { email: 'hospital@apexhealth.in', name: 'Dr. Anand Mehra (Medical Supt)', pbtn: 'pbtn-HospitalAdmin' },
+            'Reception Desk': { email: 'reception@apexhealth.in', name: 'Pooja K. (Front Desk)', pbtn: 'pbtn-ReceptionDesk' },
+            'Super Admin': { email: 'admin@apexhealth.in', name: 'Apex Group Administrator', pbtn: 'pbtn-SuperAdmin' }
+        };
+
         function playClickSound() {
             try {
                 const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -593,11 +632,24 @@
             } catch(e) {}
         }
 
+        function syncRoleFromDropdown() {
+            const role = document.getElementById('inputRoleSelect').value;
+            const meta = RoleDirectory[role];
+            if (meta) {
+                document.getElementById('inputEmail').value = meta.email;
+                document.querySelectorAll('.persona-btn').forEach(btn => btn.classList.remove('active-selected'));
+                const btn = document.getElementById(meta.pbtn);
+                if (btn) btn.classList.add('active-selected');
+            }
+        }
+
         function selectPersona(role, email, name) {
             playClickSound();
             document.querySelectorAll('.persona-btn').forEach(btn => btn.classList.remove('active-selected'));
-            event.currentTarget.classList.add('active-selected');
+            const clicked = event ? event.currentTarget : document.getElementById(RoleDirectory[role]?.pbtn);
+            if (clicked) clicked.classList.add('active-selected');
 
+            document.getElementById('inputRoleSelect').value = role;
             document.getElementById('inputEmail').value = email;
             
             // Auto login animation
@@ -617,14 +669,20 @@
         function handleLoginSubmit(e) {
             e.preventDefault();
             playClickSound();
+            const role = document.getElementById('inputRoleSelect').value || 'Doctor';
+            const meta = RoleDirectory[role] || { name: 'Hospital Staff' };
+
             const btn = document.getElementById('submitLoginBtn');
             const progress = document.getElementById('loginProgress');
             progress.style.display = 'block';
-            btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Verifying Credentials...`;
+            btn.innerHTML = `<i class="bi bi-arrow-repeat spin"></i> Loading ${role} Workspace...`;
+
+            sessionStorage.setItem('medios_user_role', role);
+            sessionStorage.setItem('medios_user_name', meta.name);
 
             setTimeout(() => {
                 window.location.href = 'dashboard.html';
-            }, 700);
+            }, 650);
         }
     </script>
 </body>
