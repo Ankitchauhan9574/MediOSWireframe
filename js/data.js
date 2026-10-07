@@ -108,7 +108,7 @@ const MediData = {
             waiting: 3,
             schedule: "10:00 AM - 04:00 PM",
             availableSlots: ["11:00 AM", "11:45 AM", "02:30 PM", "03:15 PM"],
-            avatar: "https://images.unsplash.com/photo-1594824813580-49605511b8b6?w=150&auto=format&fit=crop&q=80",
+            avatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80",
             slotSchedule: {
                 morning: [
                     { time: "10:00 AM", isBooked: true, bookedBy: "Harish S." },
